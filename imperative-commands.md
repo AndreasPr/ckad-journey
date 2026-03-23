@@ -17,6 +17,13 @@ When used together, these options allow us to generate configuration files insta
 ## Generate the Pod YAML (without creating it):
 ```kubectl run nginx --image=nginx --dry-run=client -o yaml```
 
+## Create a Pod named redis using the redis:alpine image and assigns it the label tier=db:
+```kubectl run redis --image=redis:alpine --labels="tier=db"```
+
+## Create a Pod named httpd running the httpd:alpine image and exposes port 80. It also automatically creates a ClusterIP Service to make the Pod accessible within the cluster.
+```kubectl run httpd --image=httpd:alpine --port=80 --expose=true```
+
+
 # Deployment
 
 ## Create a Deployment:
@@ -108,3 +115,14 @@ Outputs the resource definition in YAML format. Ideal for editing and reapplying
 Shows the standard output with additional details (such as node information, IPs, etc.).
 4. ```-o name```
 Prints only the resource name, which is helpful when chaining commands or writing scripts.
+
+
+# Kubectl Explain Command:
+### List all resource types (Pods, Services, Deployments, etc.) that the cluster API supports, including whether they are namespaced.
+```kubectl api-resources```
+### Show documentation for the Pod resource, describing its purpose and top-level fields:
+```kubectl explain pods```
+### Dive into the Pod’s spec section, explaining how to configure containers, volumes, and other Pod specifications.
+```kubectl explain pods.spec```
+### Show a full, detailed explanation of all Pod fields and subfields recursively, giving complete documentation for the resource structure.
+```kubectl explain pods --recursive```

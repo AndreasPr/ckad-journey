@@ -31,7 +31,25 @@ spec:
 ## If you want to save the output to a file named {filename}.yaml. This lets you edit or reuse the configuration before applying it to the cluster:
 ```kubectl run nginx --image=nginx --dry-run=client -o yaml > pod-definition.yaml```
 
-### To create a Pod using the configuration file:
+## Create a Pod named myapp using the andreas/myapp image. The -- --color green part passes --color green as command-line arguments to the container at runtime:
+```kubectl run myapp --image=andreas/myapp -- --color green```
+
+### Interesting comment
+
+If you add `--command`, it tells Kubernetes to treat the arguments after `--` as the **actual command (ENTRYPOINT)** instead of just arguments.
+
+*Without* `--command`:
+
+* `--color green` is passed as **arguments** to the container’s default command.
+
+*With* `--command`:
+
+```kubectl run myapp --image=andreas/myapp --command -- --color green```
+
+* `--color green` **replaces the container’s default command entirely** and is executed as the main command.
+
+
+### Create a Pod using the configuration file:
 ```kubectl create -f pod-definition.yaml```
 
 ### Get all Pods:
@@ -44,16 +62,65 @@ spec:
 ```kubectl describe pod {pod-name}```
 
 ### Extract a pod definition to a file (if you aren't given a pod definition file):
-```kubectl get pod {pod-name} -o yaml > pod-definition.yaml``
+```kubectl get pod {pod-name} -o yaml > pod-definition.yaml```
 
-### Modify properties of a pod:
+### Edit properties of a pod:
 ```kubectl edit pod {pod-name}```
-#### Only the properties listed below are editable:
+#### In Kubernetes, you cannot modify most fields of an existing Pod. Only the following fields are editable:
 - spec.containers[*].image
 - spec.initContainers[*].image
 - spec.activeDeadlineSeconds
 - spec.tolerations
 - spec.terminationGracePeriodSeconds
+
+Fields such as environment variables, service accounts, and resource limits cannot be changed once the Pod is running.
+
+What if you need to change non-editable fields?
+
+**You have 2 main options:**
+
+**Option 1**: Use ```kubectl edit``` (and recreate the Pod)
+```kubectl edit pod <pod-name>```
+
+* This opens the Pod definition in an editor (e.g., `vi`)
+* Make your desired changes and try to save
+
+You will get an error if you modify non-editable fields.
+
+However:
+
+* A **temporary file** containing your changes will be saved (path shown in the error message)
+
+Then:
+
+1. Delete the existing Pod:
+
+```kubectl delete pod webapp```
+
+2. Recreate the Pod using the saved file:
+
+```kubectl create -f /tmp/kubectl-edit-xxxx.yaml```
+
+---
+
+**Option 2**: Export, Modify, and Recreate
+
+1. Export the current Pod definition:
+
+```kubectl get pod webapp -o yaml > my-new-pod.yaml```
+
+2. Edit the file:
+
+```vi my-new-pod.yaml```
+
+3. Delete the existing Pod:
+
+```kubectl delete pod webapp```
+
+4. Create a new Pod with the updated configuration:
+
+```kubectl create -f my-new-pod.yaml```
+
 
 ### Delete a pod
 ```kubectl delete pod {pod-name}```

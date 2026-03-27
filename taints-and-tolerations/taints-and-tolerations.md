@@ -16,7 +16,7 @@ Think of it as:
 
 ---
 
-## Add a Taint to a Node
+### Add a Taint to a Node
 ```kubectl taint nodes {node-name} {key}={value}:{taint-effect}```
 
 Example:
@@ -25,6 +25,55 @@ Example:
 This means:
 - Node `node1` will reject Pods
 - Unless Pods tolerate `app=blue`
+
+
+### Create a Pod with Tolerations
+Follow these steps to create a Pod that can tolerate a specific node taint.
+
+---
+
+#### Step 1: Generate Pod YAML:
+```kubectl run bee --image=nginx --dry-run=client -o yaml > bee.yaml```
+
+#### Step 2: Add Toleration:
+
+Edit the file:
+
+```vi bee.yaml```
+
+Add the following under the `spec` section:
+```
+tolerations:
+- key: "spray"
+  operator: "Equal"
+  value: "mortein"
+  effect: "NoSchedule"
+```
+
+This allows the Pod to:
+
+Be scheduled on nodes tainted with `spray=mortein:NoSchedule`
+
+
+#### Step 3: Create the Pod:
+```kubectl create -f bee.yaml```
+
+* This applies the configuration and creates the Pod in the cluster.
+
+
+### List of nodes:
+```kubectl get nodes```
+
+### Remove taint from a node:
+```kubectl taint node controlplane node-role.kubernetes.io/control-plane:NoSchedule-```
+
+### View Taints on a Node:
+```kubectl describe node kubemaster | grep Taint```
+
+* Shows all taints applied to the node.
+
+### Check which node is a Pod on now:
+```kubectl get pods -o wide```
 
 
 # Taint Effects
@@ -104,14 +153,6 @@ spec:
       effect: "NoSchedule"
 ```
 
-
-#### View Taints on a Node:
-```kubectl describe node kubemaster | grep Taint```
-
-Shows all taints applied to the node.
-
-
-
 # Key Takeaways
 * Taints = repel Pods from nodes
 * Tolerations = allow Pods to be scheduled
@@ -121,6 +162,3 @@ Shows all taints applied to the node.
 
 **Best practice:**
 * Use `NoExecute` for strict isolation or node failure handling
-
-
-

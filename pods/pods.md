@@ -64,6 +64,48 @@ If you add `--command`, it tells Kubernetes to treat the arguments after `--` as
 ### Extract a pod definition to a file (if you aren't given a pod definition file):
 ```kubectl get pod {pod-name} -o yaml > pod-definition.yaml```
 
+
+### Count Pods with a Specific Label
+```kubectl get pods --selector env=dev --no-headers | wc -l```
+
+What it does:
+
+* Filters Pods with label `env=dev`
+* `--no-headers removes the header row
+* `wc -l` counts the number of matching Pods
+
+**Result:** Total number of Pods in the dev environment
+
+### Get All Resources with a Label
+```kubectl get all --selector env=prod --no-headers```
+
+What it does:
+
+* Retrieves all common resources (Pods, Services, Deployments, etc.)
+* Filters by label env=prod
+* Hides headers for cleaner output
+
+Useful for:
+
+* Viewing everything related to a specific environment
+
+
+### Filter with Multiple Labels (AND condition)
+```kubectl get all --selector env=prod,bu=finance,tier=finance```
+
+What it does:
+
+Selects resources that match ALL of the following:
+* `env=prod`
+* `bu=finance`
+* `tier=finance`
+
+#### Important:
+
+* Comma-separated labels = logical AND
+* Resource must match every label
+
+
 ### Edit properties of a pod:
 ```kubectl edit pod {pod-name}```
 #### In Kubernetes, you cannot modify most fields of an existing Pod. Only the following fields are editable:

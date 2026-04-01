@@ -319,3 +319,313 @@ Changes are applied immediately after saving
     * DNS
     * External load balancer
 
+
+
+## Useful Scenarios
+
+### 1. Scenario
+Add an annotation to the web-app-ingress Ingress to redirect all HTTP requests to HTTPS.
+Use the NGINX Ingress Controller annotation for SSL redirect.
+
+### Solution
+
+```
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: web-app-ingress
+  namespace: webapp
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+      - app.kodekloud.local
+    secretName: app-tls
+  rules:
+  - host: app.kodekloud.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: web-app
+            port:
+              number: 80
+```
+
+### 2. Scenario
+Create a service to make ingress available to external users. Specs:
+* Name: ignress
+* Type: NodePort
+* Port: 80
+* TargetPort: 80
+* NodePort: 30080
+* Namespace: ingress-space
+* Use the right selector
+
+### Solution
+```kubectl expose deploy ingress-controller -n ingress-space --name ingress --port=80 --target-port=80 --type NodePort```
+
+After that, run the command: ```kubectl edit svc ingress -n ingress-space``` and update the field `nodePort` to the value `30080`.
+
+
+### 3. Scenario
+Create an ingress resource to make the apps available at `/watch` and `/wear` on the ingress service.
+(We have already created two services `wear-service` and `video-service`)
+### Solution
+```kubectl create ingress ingress-wear-watch -n app-space --rule="/wear=wear-service:8080" -- rule="/watch=video-service:8080"```
+
+Also, we should update the ingress by running the command: `kubectl edit ingress ingress-wear-watch -n app-space` and include the following under the `metadata` property:
+```
+annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+```
+
+
+
+
+# Ingress Rewrite Target (NGINX)
+
+---
+
+## Overview
+
+Different Ingress Controllers provide various options to customize request handling.  
+One commonly used feature in the NGINX Ingress Controller is the **rewrite-target** annotation.
+
+This option allows you to **modify the request URL path before forwarding it to the backend service**.
+
+---
+
+## Problem Scenario
+
+Assume we have two applications:
+
+- **Watch App** → serves content at:
+```
+
+http://<watch-service>:<port>/
+
+```
+
+- **Wear App** → serves content at:
+```
+
+http://<wear-service>:<port>/
+
+```
+
+---
+
+## Requirement
+
+We want users to access the applications via Ingress using:
+
+```
+
+http://<ingress-service>:<port>/watch → watch-service
+http://<ingress-service>:<port>/wear  → wear-service
+
+```
+
+---
+
+## What Happens Without Rewrite
+
+Without using `rewrite-target`, the request path is forwarded **as-is**:
+
+```
+
+/watch → /watch
+/wear  → /wear
+
+```
+
+So internally:
+
+```
+
+http://<ingress>/watch → http://<watch-service>/watch
+http://<ingress>/wear  → http://<wear-service>/wear
+
+````
+
+---
+
+## Problem
+
+The backend applications:
+- Do **NOT** expect `/watch` or `/wear`
+- Only serve content at `/`
+
+Result:
+- Requests fail with **404 Not Found**
+
+---
+
+## Solution: Rewrite Target
+
+We use the annotation:
+
+```yaml
+nginx.ingress.kubernetes.io/rewrite-target: /
+````
+
+This rewrites incoming paths:
+
+```
+/watch → /
+/wear  → /
+```
+
+---
+
+## How It Works
+
+Think of it as a **search and replace**:
+
+```
+replace(<incoming-path>, <rewrite-target>)
+```
+
+Example:
+
+```
+replace("/watch", "/")
+```
+
+---
+
+## Example Configuration
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: test-ingress
+  namespace: critical-space
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /pay
+        pathType: Prefix
+        backend:
+          service:
+            name: pay-service
+            port:
+              number: 8282
+```
+
+---
+
+## Behavior
+
+```
+Incoming:  /pay
+Rewritten: /
+Forwarded: http://pay-service:8282/
+```
+
+---
+
+# Advanced Rewrite (Regex)
+
+Sometimes you want to preserve part of the URL.
+
+---
+
+## Example
+
+```yaml
+nginx.ingress.kubernetes.io/rewrite-target: /$2
+```
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: rewrite
+  namespace: default
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  rules:
+  - host: rewrite.bar.com
+    http:
+      paths:
+      - path: /something(/|$)(.*)
+        pathType: Prefix
+        backend:
+          service:
+            name: http-svc
+            port:
+              number: 80
+```
+
+---
+
+## Explanation
+
+Path:
+
+```
+/something(/|$)(.*)
+```
+
+Matches:
+
+* `/something`
+* `/something/abc`
+* `/something/anything/here`
+
+---
+
+## Rewrite Logic
+
+```
+/something(/|$)(.*) → /$2
+```
+
+Examples:
+
+| Incoming Request  | Rewritten Path |
+| ----------------- | -------------- |
+| /something        | /              |
+| /something/hello  | /hello         |
+| /something/api/v1 | /api/v1        |
+
+---
+
+## Key Idea
+
+* `$2` = everything after `/something`
+* This allows flexible routing while preserving subpaths
+
+---
+
+# Key Takeaways
+
+* `rewrite-target` modifies request paths before reaching backend
+* Useful when backend apps do not expect prefixed paths
+* Prevents 404 errors caused by mismatched routes
+* Supports both:
+
+  * Simple rewrites (`/ → /`)
+  * Advanced regex-based rewrites
+
+---
+
+# Pro Tip
+
+Always verify:
+
+* Backend application routes
+* Ingress path configuration
+* Rewrite rules

@@ -315,7 +315,6 @@ Get the API groups and resource names from command kubectl api-resources. Use th
 Solution manifest file to create a clusterrole and clusterrolebinding for michelle user:
 
 ```
----
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
@@ -343,4 +342,4 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
 ```
 
-After save into a file, run the command kubectl create -f <file-name>.yaml to create a resources from definition file.
+After save into a file, run the command `kubectl create -f <file-name>.yaml` to create a resources from definition file.

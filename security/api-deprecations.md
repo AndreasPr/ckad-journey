@@ -268,7 +268,7 @@ Before:
 
 ## Example
 
-```kubectl convert -f nginx.yaml --output-version apps/v1```
+```kubectl-convert -f nginx.yaml --output-version apps/v1```
 
 ---
 
@@ -466,11 +466,11 @@ With help of the `kubectl convert` command, change the deprecated API version to
 
 ## Solution
 Run the command `kubectl-convert` to change the deprecated API version as follows :-
-```
-root@controlplane:~# kubectl-convert -f ingress-old.yaml --output-version networking.k8s.io/v1
+```bash
+root@controlplane: kubectl-convert -f ingress-old.yaml --output-version networking.k8s.io/v1
 
 # store new changes into a file 
-root@controlplane:~# kubectl-convert -f ingress-old.yaml --output-version networking.k8s.io/v1 > ingress-new.yaml
+root@controlplane: kubectl-convert -f ingress-old.yaml --output-version networking.k8s.io/v1 > ingress-new.yaml
 ```
 
 After changing the API version and storing into a file, use the `kubectl create -f` command to deploy the resource :-
@@ -482,3 +482,10 @@ Inspect the `apiVersion` as follows :-
 ```root@controlplane:~# kubectl get ing ingress-space -o yaml | grep apiVersion```
 
 Note: Maybe you will not see the service and other resources mentioned in the `ingress` YAML on the `controlplane` node because we have to only deploy the `ingress` resource with the latest API version.
+
+
+## Scenario 7
+Identify which API group a resource called 'job' is part of?
+
+## Solution
+Run the command: `kubectl explain job`

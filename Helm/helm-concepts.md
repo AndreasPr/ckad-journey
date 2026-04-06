@@ -141,7 +141,7 @@ helm list
 ### Uninstall a Release
 
 ```bash
-helm uninstall my-release
+helm uninstall {release-name}
 ```
 
 Removes:
@@ -241,7 +241,7 @@ Always provide defaults in `values.yaml` to avoid template failures.
 
 ---
 
-## Common Interview Questions
+## Common Useful Questions
 
 ### Q1: What is `.Values` in Helm?
 

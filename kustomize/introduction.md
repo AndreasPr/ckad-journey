@@ -253,6 +253,17 @@ Avoid Kustomize if:
 
 ---
 
+## Install Kustomize
+
+```bash
+curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+```
+
+Verify installation by running:
+```bash
+kustomize version --short
+```
+
 ## Useful Questions
 
 ### Q1: What problem does Kustomize solve?

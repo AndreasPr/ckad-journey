@@ -24,7 +24,7 @@ Exposes the Service on a static port on each node’s IP.
 
 ## 2. ClusterIP (Default)
 
-Exposes the Service **only داخل the cluster**.
+Exposes the Service **only inside the cluster**.
 
 * Used for internal communication between services
 * Not accessible from outside the cluster
@@ -65,7 +65,7 @@ spec:
 ## Explanation
 
 * **type: NodePort** → Exposes the Service externally
-* **port** → Service port داخل cluster (required)
+* **port** → Service port inside cluster (required)
 * **targetPort** → Port on the Pod/container
 * **nodePort** → Port exposed on each node (range: 30000–32767)
 * **selector** → Matches Pods that will receive traffic
@@ -102,7 +102,7 @@ spec:
 ## Explanation
 
 * **type: ClusterIP** → Internal-only access
-* **port** → Service port داخل cluster
+* **port** → Service port inside cluster
 * **targetPort** → Pod port
 * **selector** → Defines target Pods
 

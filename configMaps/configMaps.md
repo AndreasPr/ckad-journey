@@ -1,114 +1,237 @@
-# ConfigMaps
+# ConfigMaps in Kubernetes
 
-1. Create ConfigMap
-2. Inject into Pod
+ConfigMaps are Kubernetes objects used to store non-sensitive configuration data as key-value pairs. They allow you to decouple configuration from application code, making your applications more portable and easier to manage across environments.
 
-## Example ConfigMap in Pods
+## Workflow
+
+1. Create a ConfigMap
+2. Inject the ConfigMap into a Pod
+
+---
+
+## Example: Using ConfigMap in a Pod
+
+### ConfigMap Definition
+
 *config-map.yaml*
-```
+```yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
-    name: app-config
+  name: app-config
 data:
-    APP_COLOR: blue
-    APP_MODE: prod
-```
+  APP_COLOR: blue
+  APP_MODE: prod
+````
+
+### Pod Definition
 
 *pod-definition.yaml*
-```
+
+```yaml
 apiVersion: v1 
 kind: Pod 
 metadata:
-    name: simple-webapp-color
+  name: simple-webapp-color
 spec:
-    containers:
-        - name: simple-webapp-color
-          image: simple-webapp-color
-          ports:
-            - containerPort: 8080
-          envFrom:
-            - configMapRef:
-                name: app-config
+  containers:
+    - name: simple-webapp-color
+      image: simple-webapp-color
+      ports:
+        - containerPort: 8080
+      envFrom:
+        - configMapRef:
+            name: app-config
 ```
 
-## **2 ways** to Create ConfigMaps:
-### 1. Imperative Approach
+### Explanation
 
-The imperative approach is used when you want to quickly create a ConfigMap from the command line without writing a YAML file. It’s ideal for testing or simple use cases.
+* `envFrom` imports **all key-value pairs** from the ConfigMap as environment variables.
+* `APP_COLOR` and `APP_MODE` become available inside the container automatically.
+* This avoids defining each variable manually.
 
-```kubectl create configmap {config-name} --from-literal={key}={value}```
-What it does:
-* Creates a ConfigMap with key-value pairs directly from the command line.
-* Each --from-literal flag adds one key-value entry.
+---
 
-#### For example:
-```kubectl create configmap app-config --from-literal=APP_COLOR=blue --from-literal=APP_MODE=pod```
+## Ways to Create ConfigMaps
+
+There are **two main approaches**:
+
+---
+
+## 1. Imperative Approach
+
+Used for quick creation directly from the command line.
+
+### From Literal Values
+
+```bash
+kubectl create configmap <config-name> --from-literal=<key>=<value>
+```
+
+Example:
+
+```bash
+kubectl create configmap app-config \
+  --from-literal=APP_COLOR=blue \
+  --from-literal=APP_MODE=prod
+```
 
 Explanation:
-* app-config -> name of the ConfigMap
-* APP_COLOR=blue -> stored as a key-value pair
-* APP_MODE=pod -> another configuration entry
-* Result -> a ConfigMap with 2 entries accessible by Pods
 
+* Each `--from-literal` adds one key-value pair
+* Creates a ConfigMap instantly without YAML
 
-### From a file:
-```kubectl create configmap <config-name> --from-file={path-to-file}```
-What it does:
-* Creates a ConfigMap using the contents of a file.
-* The file name becomes the key, and its content becomes the value.
+---
 
-```kubectl create  configmap app-config --from-file=app_config.properties```
+### From File
 
-Explanation:
-* ```app_config.properties``` might contain:
+```bash
+kubectl create configmap <config-name> --from-file=<path-to-file>
+```
+
+Example:
+
+```bash
+kubectl create configmap app-config --from-file=app_config.properties
+```
+
+If `app_config.properties` contains:
+
 ```
 APP_COLOR=blue
 APP_MODE=prod
 ```
-* Kubernetes stores this file inside the ConfigMap.
-* Useful for large configs or structured data.
 
-### 2. Declarative Approach
-The declarative approach uses YAML files and is the recommended method for production because it is version-controlled, reusable, and easier to manage.
+Then:
 
-#### Step 1: Define in YAML
-*config-map.yaml*
-```
+* The file name becomes the key
+* The entire file content becomes the value
+
+Use case:
+
+* Large configurations
+* Application config files (e.g., `.properties`, `.env`, `.json`)
+
+---
+
+## 2. Declarative Approach (Recommended)
+
+Best for production environments because it is:
+
+* Version-controlled
+* Repeatable
+* Easier to maintain
+
+### Step 1: Define YAML
+
+```yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
-    name: app-config
+  name: app-config
 data:
-    APP_COLOR: blue
-    APP_MODE: prod
+  APP_COLOR: blue
+  APP_MODE: prod
+```
+
+### Step 2: Apply Configuration
+
+```bash
+kubectl apply -f config-map.yaml
 ```
 
 Explanation:
-* apiVersion: v1 -> standard API for ConfigMaps
-* kind: ConfigMap -> defines the resource type
-* metadata.name -> unique name of the ConfigMap
-* data -> key-value pairs used by applications
 
+* Creates or updates the ConfigMap
+* Preferred over `create` for idempotency
 
-#### Step 2: Apply the configuration
+---
 
-```kubectl create -f config-map.yaml```
+## Methods to Inject ConfigMap into Pods
 
-What it does:
-* Reads the YAML file and creates the ConfigMap in the cluster.
+### 1. Using `envFrom` (Import All Variables)
 
-*Important note*:
-* Use kubectl apply -f instead of create if you want to update the ConfigMap later.
+```yaml
+envFrom:
+  - configMapRef:
+      name: app-config
+```
 
+* Loads all keys as environment variables
 
+---
 
-# Commands
-## List all ConfigMaps in the current namespace, showing their names and basic details:
-```kubectl get configmaps```
+### 2. Using `env` (Selective Injection)
+
+```yaml
+env:
+  - name: APP_COLOR
+    valueFrom:
+      configMapKeyRef:
+        name: app-config
+        key: APP_COLOR
+```
+
+* Allows fine-grained control
+* Only specific keys are injected
+
+---
+
+### 3. Mounting as Files (Advanced)
+
+```yaml
+volumeMounts:
+  - name: config-volume
+    mountPath: /etc/config
+
+volumes:
+  - name: config-volume
+    configMap:
+      name: app-config
+```
+
+* Each key becomes a file inside the directory
+* Useful for applications expecting config files
+
+---
+
+## Commands
+
+### List ConfigMaps
+
+```bash
+kubectl get configmaps
+```
 
 or
 
-```kubectl get cm```
-## Provide detailed information about each ConfigMap, including its key-value data and metadata:
-```kubectl describe configmaps```
+```bash
+kubectl get cm
+```
+
+---
+
+### Describe ConfigMap
+
+```bash
+kubectl describe configmap <config-name>
+```
+
+* Shows detailed information including stored data
+
+---
+
+## Best Practices
+
+* Use ConfigMaps for **non-sensitive configuration only**
+* Use **Secrets** for credentials and sensitive data
+* Prefer the **declarative approach** in production
+* Use **envFrom** for simplicity and **env** for control
+* Use **volume mounts** when applications expect config files
+
+---
+
+## Summary
+
+ConfigMaps provide a clean and scalable way to manage application configuration in Kubernetes. They separate configuration from code, improve reusability, and simplify environment-specific customization.
+

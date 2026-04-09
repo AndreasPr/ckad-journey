@@ -613,7 +613,7 @@ Configure a volume to store these logs at /var/log/webapp on the host.
 Use the spec provided below.
 
 * Name: webapp
-* Image Name: kodekloud/event-simulator
+* Image Name: andreas/event-simulator
 * Volume HostPath: /var/log/webapp
 * Volume Mount: /log
 
@@ -630,7 +630,7 @@ metadata:
 spec:
   containers:
   - name: event-simulator
-    image: kodekloud/event-simulator
+    image: andreas/event-simulator
     env:
     - name: LOG_HANDLERS
       value: file
@@ -733,7 +733,7 @@ Then run `kubectl create -f <file-name>.yaml`
 Update the webapp pod to use the persistent volume claim as its storage.
 Replace hostPath configured earlier with the newly created PersistentVolumeClaim:
 * Name: webapp
-* Image Name: kodekloud/event-simulator
+* Image Name: andreas/event-simulator
 * Volume: PersistentVolumeClaim=claim-log-1
 * Volume Mount: /log
 
@@ -752,7 +752,7 @@ metadata:
 spec:
   containers:
   - name: event-simulator
-    image: kodekloud/event-simulator
+    image: andreas/event-simulator
     env:
     - name: LOG_HANDLERS
       value: file

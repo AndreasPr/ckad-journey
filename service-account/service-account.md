@@ -237,7 +237,7 @@ spec:
     spec:
       containers:
       - name: web-dashboard
-        image: gcr.io/kodekloud/customimage/my-kubernetes-dashboard
+        image: gcr.io/andreas/customimage/my-kubernetes-dashboard
         ports:
         - containerPort: 8080
         env:

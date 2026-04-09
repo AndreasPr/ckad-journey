@@ -341,10 +341,10 @@ spec:
   ingressClassName: nginx
   tls:
   - hosts:
-      - app.kodekloud.local
+      - app.andreas.local
     secretName: app-tls
   rules:
-  - host: app.kodekloud.local
+  - host: app.andreas.local
     http:
       paths:
       - path: /

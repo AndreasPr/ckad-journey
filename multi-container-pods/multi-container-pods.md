@@ -181,3 +181,71 @@ spec:
 **Most common real-world pattern:**
 
 **App + Sidecar (logging / monitoring / proxy)**
+
+# Scenarios
+## Scenario 1
+The application outputs logs to the file `/log/app.log`. View the logs and try to identify the user having issues with Login.
+
+Inspect the log file located inside the pod by utilizing the `kubectl exec` command.
+## Solution
+Run the command: `kubectl -n elastic-stack exec -it app -- cat /log/app.log`
+
+
+## Scenario 2
+
+The `app` pod in the `elastic-stack` namespace currently writes logs to `/log/app.log`.
+Your task is to add a sidecar container that will ship these logs to Elasticsearch.
+
+Requirements:
+
+* Add a sidecar container named `sidecar` to the existing `app` pod.
+* Use the image: `andreas/filebeat-configured`.
+* Mount the log volume: The existing `log-volume` must be mounted to the sidecar container at `/var/log/event-simulator/`.
+* Implementation: Define the sidecar as a Kubernetes native sidecar container using `initContainers`, and set the `restartPolicy` to `Always`.
+
+Important Notes:
+
+* You will need to delete and re-create the pod to add the sidecar container.
+* Do not modify the existing app container or volume configuration.
+* The sidecar should be defined as an `initContainer` and must run continuously alongside the main application container
+
+Reference Documentation:
+
+* Sidecar Containers: https://kubernetes.io/docs/concepts/workloads/pods/sidecar-containers/
+
+Note: State persistence concepts are discussed in detail later in this course. For now, follow the pattern shown in the reference documentation.
+
+## Solution
+
+Utilize the manifest below to re-create the `app` pod with the updated configuration:
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    name: app
+  name: app
+  namespace: elastic-stack
+spec:
+  initContainers:
+  - name: sidecar
+    image: andreas/filebeat-configured
+    restartPolicy: Always
+    volumeMounts:
+      - name: log-volume
+        mountPath: /var/log/event-simulator
+
+  containers:
+  - image: andreas/event-simulator
+    name: app
+    resources: {}
+    volumeMounts:
+    - mountPath: /log
+      name: log-volume
+
+  volumes:
+  - hostPath:
+      path: /var/log/webapp
+      type: DirectoryOrCreate
+    name: log-volume
+```

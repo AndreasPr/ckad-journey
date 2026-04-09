@@ -386,11 +386,11 @@ Kubernetes ecosystem uses CRDs heavily:
 ## Scenario 1
 We have provided an incomplete `Custom Resource Definition (CRD)` manifest located at `/root/crd.yaml`.
 
-Your task is to complete this file to define a namespaced CRD named `internals.datasets.kodekloud.com`.
+Your task is to complete this file to define a namespaced CRD named `internals.datasets.andreas.com`.
 
 Please ensure you adhere to the following specifications:
 
-* The CRD must belong to the group `datasets.kodekloud.com`.
+* The CRD must belong to the group `datasets.andreas.com`.
 * The scope of the CRD should be set to `Namespaced`.
 * The version must be `v1`, and it should be marked as both `served: true` and `storage: true`.
 
@@ -409,9 +409,9 @@ The solution file for `crd.yaml` is pasted below:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: internals.datasets.kodekloud.com 
+  name: internals.datasets.andreas.com 
 spec:
-  group: datasets.kodekloud.com
+  group: datasets.andreas.com
   versions:
     - name: v1
       served: true

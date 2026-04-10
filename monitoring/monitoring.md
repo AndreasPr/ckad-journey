@@ -113,4 +113,35 @@ Deploy the Metrics Server in your Kubernetes cluster by applying the latest rele
 ```kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml```
 
 
+# Scenario
+## Scenario 1
+Which node consumes the `most CPU(cores)`?
 
+## Solution
+`kubectl top node --sort-by='cpu' --no-headers | head -1`
+
+Here we have used `head -1` command to print the node first in the sorted order, which is the one that uses the most cpu cores.
+
+## Scenario 2
+Identify the node that consumes the `most Memory(bytes)`.
+
+## Solution
+`kubectl top node --sort-by='memory' --no-headers | head -1`
+
+Here we have used `head -1` command to print the node first in the sorted order, which is the one that uses the most Memory(bytes).
+
+## Scenario 3
+Identify the POD that consumes the `most Memory(bytes)` in default namespace.
+
+## Solution
+`kubectl top pod --sort-by='memory' --no-headers | head -1`
+
+Here we have used `head -1` command to print the pod first in the order, which is the one that uses the most Memory(bytes).
+
+## Scenario 4
+Identify the POD that consumes the `least CPU(cores)` in default namespace.
+
+## Solution
+`kubectl top pod --sort-by='cpu' --no-headers | tail -1 `
+
+Here we have used `tail -1` to list the last pod in the list, which is the pod that uses the least CPU(cores).

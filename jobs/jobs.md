@@ -43,15 +43,15 @@ spec:
 ```kubectl get jobs```
 
 ### View logs
-```kubectl logs {name-of-pod}```
+```kubectl logs {pod-name}```
 
 Note: Logs come from the Pod created by the Job
 
 ### Delete Job
-```kubectl delete job {name-of-job}```
+```kubectl delete job {job-name}```
 
 ### Describe Job
-```kubectl describe jpb {name-of-job}```
+```kubectl describe job {job-name}```
 
 This deletes:
 1. The Job
@@ -90,7 +90,7 @@ Kubernetes will:
     * OR failure limit is exceeded
 
 ## Failure Control (Important)
-backoffLimit: 4
+**backoffLimit: 4**
 
 - Default = 6 retries
 - After limit exceeded -> Job marked Failed
@@ -273,18 +273,20 @@ Defines containers and runtime behavior
 ## Important CronJob Options
 #### 1. `startingDeadlineSeconds`
 
-Time limit to start a missed job
+Defines a deadline (in whole seconds) for starting the Job, if that Job misses its scheduled time for any reason.
 
 ```startingDeadlineSeconds: 60```
 
 #### 2. `concurrencyPolicy`
 
-Controls how concurrent Jobs behave
+Controls how concurrent Jobs behave.
+
+
 ```concurrencyPolicy: Forbid```
 
 Options:
 * `Allow` (default) -> run jobs in parallel
-* `Forbid` -> skip if previous job still running
+* `Forbid` -> skip new job if previous job still running
 * `Replace` -> stop old job and start new one
 
 #### 3. `successfulJobsHistoryLimit`
@@ -314,7 +316,7 @@ Keeps last failed jobs
     * History limits
 
 
-## Real-World Example
+## Real-World Examples
 
 **Nightly backup:**
 
@@ -322,10 +324,17 @@ Keeps last failed jobs
 
 Runs every day at 2 AM
 
+**Weekly task:**
+
+`schedule: "0 3 * * 1"`
+
+This task is scheduled to run weekly on a Monday at 3 AM.
+
+
 ## Pro Tip
 
 Always configure:
 * `concurrencyPolicy`
 * History limits
 
-Prevents resource leaks and overlapping executions
+Prevents resource leaks and overlapping executions.

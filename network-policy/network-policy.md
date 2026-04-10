@@ -26,7 +26,7 @@ Once a NetworkPolicy is applied:
 
 ## Example: Allow API → DB on Port 3306
 
-```
+```yaml
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -37,6 +37,7 @@ spec:
             role: db
     policyTypes:
     - Ingress
+
     ingress:
     - from:
         - podSelector:
@@ -46,10 +47,6 @@ spec:
         - protocol: TCP
           port: 3306
 ```
-
-
-
-
 
 ### What Does This Do?
 
@@ -75,8 +72,6 @@ Problem:
 But if combined improperly, it might allow broader access
 
 
-
-
 ### Create the network policy:
 ```kubectl create -f policy-definition.yaml```
 
@@ -90,11 +85,9 @@ But if combined improperly, it might allow broader access
     - Flannel
 
 
-
-
-
 Our goal is to protect the database pod so that it does not allow access from any other pod except the API pod and only on port 3306:
-```
+
+```yaml
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -117,7 +110,8 @@ spec:
 
 What if there are multiple API pods in the cluster with the same labels, but in different namespaces?
 The current policy would allow any pod in any namespace with matching labels to reach the db pod. For that reason, we add a new selector called `namespaceSelector` property along with `podSelector` property. Therefore, we have:
-```
+
+```yaml
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -128,6 +122,7 @@ spec:
             role: db
     policyTypes:
     - Ingress
+
     ingress:
     - from:
         - podSelector:
@@ -143,7 +138,8 @@ spec:
 
 ## Allow Traffic from External IPs
 We could configure a network policy to allow traffic originating from certain IP addresses. For this reason, we use `ipBlock` field. Therefore:
-```
+
+```yaml
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -154,6 +150,7 @@ spec:
             role: db
     policyTypes:
     - Ingress
+
     ingress:
     - from:
         - podSelector:
@@ -172,7 +169,7 @@ spec:
 
 ### Explanation of the TWO Rules
 
-```
+```yaml
 ingress:
 - from:
     - podSelector: {name: api-pod}
@@ -212,7 +209,8 @@ With egress policy:
 
 ## Example: DB → Backup Server
 Instead of the backup server initiating a backup, say we have an agent on the db pod that pushes backup to the backup server. In that case, the traffic is originating from the db pod to an external backup server. So, we need egress rule defined. Therefore:
-```
+
+```yaml
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -224,6 +222,7 @@ spec:
     policyTypes:
     - Ingress
     - Egress
+
     ingress:
     - from:
         - podSelector:
@@ -232,6 +231,7 @@ spec:
         ports:
         - protocol: TCP
           port: 3306
+
     egress:
     - to: 
         - ipBlock:
@@ -275,11 +275,13 @@ Build zero-trust networking inside your cluster
 
 ### List Network Policies
 ```kubectl get networkpolicy```
-or 
+
+or
+
 ```kubectl get netpol```
 
 ### Describe a Network Policy
-```kubectl describe netpol {name-of-network-policy}```
+```kubectl describe netpol {network-policy-name}```
 
 
 ### Apply (Create/Update) a Network Policy
@@ -287,7 +289,9 @@ or
 
 --- 
 
-# Problem
+# Scenarios
+
+## Scenario 1
 
 Create a network policy to allow egress traffic from the Internal application only to the payroll-service and db-service.
 
@@ -295,9 +299,17 @@ Use the spec given below. You might want to enable ingress traffic to the pod to
 
 Also, ensure that you allow egress traffic to DNS ports TCP and UDP (port 53) to enable DNS resolution from the internal pod.
 
+- Policy Name: internal-policy
+- Policy Type: Egress
+- Egress Allow: payroll
+- Payroll Port: 8080
+- Egress Allow: mysql
+- MySQL Port: 3306
+
+
 ## Solution
 Solution manifest file for a network policy internal-policy as follows:
-```
+```yaml
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -307,11 +319,14 @@ spec:
   podSelector:
     matchLabels:
       name: internal
+
   policyTypes:
   - Egress
   - Ingress
+
   ingress:
     - {}
+
   egress:
   - to:
     - podSelector:
@@ -358,12 +373,10 @@ Outbound traffic is restricted to:
 
 * DNS Access:
 
-DNS is handled by the kube-dns service, which listens on port 53 for both UDP and TCP:
+DNS is handled by the `kube-dns` service, which listens on port 53 for both UDP and TCP:
 
-```
+```bash
 root@controlplane:~> kubectl get svc -n kube-system 
 NAME       TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)                  AGE
 kube-dns   ClusterIP   10.96.0.10   <none>        53/UDP,53/TCP,9153/TCP   18m
-
-root@controlplane:~>
 ```

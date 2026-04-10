@@ -25,14 +25,14 @@ At any time:
 
 ## Step 1: Deploy Current Version (Blue)
 
-```
+```yaml
 version: v1
 image: myapp-image:1.0
 ```
 
 Service points to:
 
-```
+```yaml
 selector:
   version: v1
 ```
@@ -41,7 +41,7 @@ selector:
 
 
 ## Step 2: Deploy New Version (Green)
-```
+```yaml
 version: v2
 image: myapp-image:2.0
 ```
@@ -62,7 +62,7 @@ Ensure everything works before switching
 ## Step 4: Switch Traffic
 
 Update Service selector:
-```
+```yaml
 selector:
   version: v2
 ```
@@ -82,7 +82,7 @@ Options:
 
 We have the following `myapp-blue.yaml` deployment definition:
 
-```
+```yaml
 apiVersion: apps/v1 
 kind: Deployment 
 metadata:
@@ -108,7 +108,7 @@ spec:
 
 And we have the following `service-definition.yaml`:
 
-```
+```yaml
 apiVersion: v1
 kind: Service
 metadata:
@@ -119,7 +119,8 @@ spec:
 ```
 
 Later, we deploy a newer version and we call it as green new separate deployment in `myapp-green.yaml`:
-```
+
+```yaml
 apiVersion: apps/v1 
 kind: Deployment 
 metadata:
@@ -159,7 +160,7 @@ spec:
 ## Rollback Strategy
 
 If something goes wrong:
-```
+```yaml
 selector:
   version: v1
 ```
@@ -198,23 +199,6 @@ Use it when:
 * You can afford duplicate environments
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # Canary Deployment in Kubernetes
 
 
@@ -238,7 +222,7 @@ Instead of switching all traffic at once (like Blue-Green):
 
 ## Step 1: Deploy Primary Version (Stable)
 
-```
+```yaml
 version: v1
 replicas: 5
 ```
@@ -246,7 +230,7 @@ replicas: 5
 This handles most of the traffic
 
 ## Step 2: Deploy Canary Version
-```
+```yaml
 version: v2
 replicas: 1
 ```
@@ -254,7 +238,7 @@ replicas: 1
 This handles a small portion of traffic
 
 ## Step 3: Service Routes Traffic
-```
+```yaml
 selector:
   app: front-end
 ```
@@ -263,7 +247,7 @@ Important:
 
 * Service selects both versions
 * Because both have:
-```
+```yaml
 app: front-end
 ```
 
@@ -305,6 +289,7 @@ Traffic:
 
 ### Full Rollout
 ```kubectl scale deployment myapp-canary --replicas=5```
+
 ```kubectl scale deployment myapp-primary --replicas=0```
 
 Now:
@@ -316,8 +301,6 @@ Now:
 Kubernetes Service:
 * Uses **round-robin** load balancing
 * Cannot control exact percentages (like 10%, 20%)
-
-
 
 
 
@@ -365,11 +348,11 @@ Combine Canary with:
 Enables safe, automated deployments
 
 
-
-## Example
+# Scenarios
+## Scenario 1
 We have the following `myapp-primary.yaml` deployment definition:
 
-```
+```yaml
 apiVersion: apps/v1 
 kind: Deployment 
 metadata:
@@ -397,7 +380,7 @@ spec:
 
 And we have the following `service-definition.yaml`:
 
-```
+```yaml
 apiVersion: v1
 kind: Service
 metadata:
@@ -408,7 +391,7 @@ spec:
 ```
 
 Later, we deploy a newer version and we call it as new separate deployment in `myapp-canary.yaml`:
-```
+```yaml
 apiVersion: apps/v1 
 kind: Deployment 
 metadata:
@@ -432,3 +415,23 @@ spec:
         matchLabels:
             app: front-end
 ```
+
+
+## Scenario 2
+
+Scale down the `v1` version of the apps to `0` replicas and scale up the new(`v2`) version to `5` replicas.
+
+Later, delete the deployment called `frontend` completely.
+
+
+
+## Solution
+Run: `kubectl scale deployment frontend --replicas=0` 
+
+and 
+
+`kubectl scale deployment frontend-v2 --replicas=5`
+
+And later:
+
+`kubectl delete deployment frontend`

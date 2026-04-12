@@ -323,7 +323,7 @@ Changes are applied immediately after saving
 
 ## Useful Scenarios
 
-### 1. Scenario
+### Scenario 1
 Add an annotation to the web-app-ingress Ingress to redirect all HTTP requests to HTTPS.
 Use the NGINX Ingress Controller annotation for SSL redirect.
 
@@ -356,7 +356,7 @@ spec:
               number: 80
 ```
 
-### 2. Scenario
+### Scenario 2
 Create a service to make ingress available to external users. Specs:
 * Name: ignress
 * Type: NodePort
@@ -372,7 +372,7 @@ Create a service to make ingress available to external users. Specs:
 After that, run the command: ```kubectl edit svc ingress -n ingress-space``` and update the field `nodePort` to the value `30080`.
 
 
-### 3. Scenario
+### Scenario 3
 Create an ingress resource to make the apps available at `/watch` and `/wear` on the ingress service.
 (We have already created two services `wear-service` and `video-service`)
 ### Solution

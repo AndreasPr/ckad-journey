@@ -127,7 +127,9 @@ Container Layer (read-write)
 
 # Example: Build an Image
 
-```docker build Dockerfile -t andreas/my-app```
+```bash
+docker build Dockerfile -t andreas/my-app
+```
 
 Creates layered image:
 
@@ -141,7 +143,9 @@ Creates layered image:
 
 If you run a container and create a file:
 
-```touch temp.txt```
+```bash
+touch temp.txt
+```
 
 This file is stored in:
 
@@ -207,7 +211,9 @@ Data survives:
 
 ## Create Volume
 
-```docker volume create data_volume```
+```bash
+docker volume create data_volume
+```
 
 Stored under:
 
@@ -219,7 +225,9 @@ Stored under:
 
 ### Old Syntax
 
-```docker run -v data_volume:/var/lib/mysql mysql```
+```bash
+docker run -v data_volume:/var/lib/mysql mysql
+```
 
 Mounts:
 
@@ -244,7 +252,9 @@ Bind mounting links a **host directory directly to a container**.
 
 ## New Syntax (Recommended)
 
-```docker run --mount type=bind,source=/data/mysql,target=/var/lib/mysql mysql```
+```bash 
+docker run --mount type=bind,source=/data/mysql,target=/var/lib/mysql mysql
+```
 
 ---
 
@@ -261,7 +271,9 @@ Bind mounting links a **host directory directly to a container**.
 
 ## Example: Bind Mount
 
-```docker run -v /host/data:/container/data```
+```bash
+docker run -v /host/data:/container/data
+```
 
 Direct mapping:
 
@@ -309,11 +321,7 @@ Direct mapping:
 
 
 
-
-
-
-
-# Docker Volume Drivers & Kubernetes Storage (Detailed)
+# Docker Volume Drivers & Kubernetes Storage (More Info)
 
 ---
 
@@ -348,7 +356,8 @@ Docker supports external storage systems via volume drivers:
 ### Using External Volume Drivers
 
 Example with AWS EBS using rexray:
-```
+
+```bash
 docker run -it \
   --name mysql \
   --volume-driver rexray/ebs \
@@ -362,11 +371,9 @@ What happens:
 * Mounts it to `/var/lib/mysql` inside container
 
 
-
-
 ## Volumes and Mounts
 ### Example: Pod with Volume
-```
+```yaml
 apiVersion: v1
 kind: Pod
 metadata:
@@ -400,10 +407,10 @@ In this case:
 * Not portable across cluster
 * Not recommended for production
 
-### Using Cloud Storage (EBS Example)
+### Using Cloud Storage (AWS EBS Example)
 *we replace 'hostpath' field of the volume with the:*
 
-```
+```yaml
 volumes:
 - name: data-volume
   awsElasticBlockStore:
@@ -422,7 +429,7 @@ A PersistentVolume (PV) is:
 * Created and managed by administrators
 
 ### Example
-```
+```yaml
 apiVersion: v1
 kind: PersistentVolume
 metadata:
@@ -437,12 +444,12 @@ spec:
 ```
 
 The access mode defines how a volume should be mounted on the hosts, whether in:
-* ReadWriteOnce (RWO) → mounted by one node
-* ReadOnlyMany (ROX) → read-only by many nodes
-* ReadWriteMany (RWX) → read-write by many nodes
+* `ReadWriteOnce` (RWO) → mounted by one node
+* `ReadOnlyMany` (ROX) → read-only by many nodes
+* `ReadWriteMany` (RWX) → read-write by many nodes
 
 If you use one of the supported storage solutions such as AWS:
-```
+```yaml
 apiVersion: v1
 kind: PersistentVolume
 metadata:
@@ -457,15 +464,17 @@ spec:
       fsType: ext4
 ```  
 
-Decouples storage from nodes
+**Decouples storage from nodes**
 
 
 ### Commands
 ```kubectl create -f pv-definition.yaml```
 
 ```kubectl get persistentvolume```
+
 or
-```kubectl get pvc```
+
+```kubectl get pv```
 
 
 
@@ -482,14 +491,14 @@ Every persistent volume claim is bound to a single persistent volume.
 If there are many possible matches for a single claim and you would like to specifically use a particular volume, you could still use labels and selectors to bind the right volumes.
 
 Matching Specific PV:
-```
+```yaml
 labels:
     name: my-pv
 ```
 
 and
 
-```
+```yaml
 selector:
     matchLabels:
         name: my-pv
@@ -504,7 +513,7 @@ Kubernetes matches:
 
 
 #### Example - Definition
-```
+```yaml
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -531,13 +540,13 @@ Defines what happens when PVC is deleted (using the field `persistentVolumeRecla
 Modern approach: use **StorageClass + dynamic provisioning**
 
 
-
-
 ### Commands
 ```kubectl create -f pvc-definition.yaml```
 
 ```kubectl get persistentvolumeclaim```
+
 or 
+
 ```kubectl get pvc```
 
 ```kubectl delete persistentVolume myclaim```
@@ -545,7 +554,7 @@ or
 
 ### Using PVCs in Pods
 Once you create a PVC use it in a POD definition file by specifying the PVC Claim name under persistentVolumeClaim section in the volumes section like this:
-```
+```yaml
 apiVersion: v1
 kind: Pod
 metadata:
@@ -556,9 +565,9 @@ spec:
       image: nginx
       volumeMounts:
       - mountPath: "/var/www/html"
-        name: mypd
+        name: mypod
   volumes:
-    - name: mypd
+    - name: mypod
       persistentVolumeClaim:
         claimName: myclaim
 ```
@@ -607,22 +616,22 @@ Result:
 
 
 
-## Scenarios
-### Scenario 1
-Configure a volume to store these logs at /var/log/webapp on the host.
+# Scenarios
+## Scenario 1
+Configure a volume to store these logs at `/var/log/webapp` on the host.
 Use the spec provided below.
 
-* Name: webapp
-* Image Name: andreas/event-simulator
-* Volume HostPath: /var/log/webapp
-* Volume Mount: /log
+* Name: `webapp`
+* Image Name: `andreas/event-simulator`
+* Volume HostPath: `/var/log/webapp`
+* Volume Mount: `/log`
 
-### Solution:
+## Solution:
 First delete the existing pod by running the following command: 
-`kubectl delete po webapp`
+`kubectl delete pod webapp`
 
-then use the below manifest file to create a webapp pod with given properties as follows:
-```
+then use the below manifest file to create a `webapp` pod with given properties as follows:
+```yaml
 apiVersion: v1
 kind: Pod
 metadata:
@@ -651,17 +660,17 @@ Then run the command ```kubectl create -f <file-name>.yaml``` to create a pod.
 
 ---
 
-### Scenario 2
+## Scenario 2
 Create a Persistent Volume with the given specification:
-* Volume Name: pv-log
-* Storage: 100Mi
-* Access Modes: ReadWriteMany
-* Host Path: /pv/log
-* Reclaim Policy: Retain
+* Volume Name: `pv-log`
+* Storage: `100Mi`
+* Access Modes: `ReadWriteMany`
+* Host Path: `/pv/log`
+* Reclaim Policy: `Retain`
 
-### Solution
+## Solution
 Use the following manifest file to create a pv-log persistent volume:
-```
+```yaml
 apiVersion: v1
 kind: PersistentVolume
 metadata:
@@ -679,15 +688,15 @@ Then run the command `kubectl create -f <file-name>.yaml` to create a PV from ma
 
 ---
 
-### Scenario 3
+## Scenario 3
 Let us claim some of that storage for our application. Create a Persistent Volume Claim with the given specification:
-* Persistent Volume Claim: claim-log-1
-* Storage Request: 50Mi
-* Access Modes: ReadWriteOnce
+* Persistent Volume Claim: `claim-log-1`
+* Storage Request: `50Mi`
+* Access Modes: `ReadWriteOnce`
 
-### Solution
-Solution manifest file to create a claim-log-1 PVC with given properties as follows:
-```
+## Solution
+Solution manifest file to create a `claim-log-1` PVC with given properties as follows:
+```yaml
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
@@ -703,17 +712,17 @@ Then run `kubectl create -f <file-name>.yaml` to create a PVC from the manifest 
 
 ---
 
-### Scenario 4
+## Scenario 4
 Update the Access Mode on the claim to bind it to the PV.
-Delete and recreate the claim-log-1.
+Delete and recreate the `claim-log-1`.
 
-### Solution
+## Solution
 To delete the existing pvc:
 
 `kubectl delete pvc claim-log-1`
 
-Solution manifest file to create a claim-log-1 PVC with correct Access Modes as follows:
-```
+Solution manifest file to create a `claim-log-1` PVC with correct Access Modes as follows:
+```yaml
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
@@ -729,22 +738,23 @@ Then run `kubectl create -f <file-name>.yaml`
 
 ---
 
-### Scenario 5
-Update the webapp pod to use the persistent volume claim as its storage.
-Replace hostPath configured earlier with the newly created PersistentVolumeClaim:
-* Name: webapp
-* Image Name: andreas/event-simulator
-* Volume: PersistentVolumeClaim=claim-log-1
-* Volume Mount: /log
+## Scenario 5
+Update the `webapp` pod to use the persistent volume claim as its storage.
+Replace `hostPath` configured earlier with the newly created PersistentVolumeClaim:
+* Name: `webapp`
+* Image Name: `andreas/event-simulator`
+* Volume: `PersistentVolumeClaim=claim-log-1`
+* Volume Mount: `/log`
 
-### Solution
-To delete the webapp pod first:
+## Solution
+To delete the `webapp` pod first:
 
-`kubectl delete po webapp`
+`kubectl delete pod webapp`
+
 Add `--force` flag in above command, if you would like to delete the pod without any delay.
 
-To create a new webapp pod with given properties as follows:
-```
+To create a new `webapp` pod with given properties as follows:
+```yaml
 apiVersion: v1
 kind: Pod
 metadata:

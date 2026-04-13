@@ -391,19 +391,19 @@ annotations:
 
 
 ### Scenario 4
-In the `webapp` namespace, create an Ingress resource named `web-app-ingress`. Configure it to route traffic for the host `app.kodekloud.local` with path `/` (pathType: `Prefix`) to the existing `web-app` Service on port `80`.
+In the `webapp` namespace, create an Ingress resource named `web-app-ingress`. Configure it to route traffic for the host `app.andreascloud.local` with path `/` (pathType: `Prefix`) to the existing `web-app` Service on port `80`.
 
 Use `apiVersion: networking.k8s.io/v1` and set `ingressClassName: nginx`.
 The Ingress Controller is already deployed - you only need to create the Ingress resource.
 
 * Ingress 'web-app-ingress' created in webapp namespace
-* Host: app.kodekloud.local
+* Host: app.andreascloud.local
 * Path: /
 * Backend service: web-app
 * Backend service port: 80
 * IngressClassName: nginx
 
-Also, enable TLS termination on the `web-app-ingress` Ingress. Add the `tls` section to use the existing `app-tls` Secret for the host `app.kodekloud.local`.
+Also, enable TLS termination on the `web-app-ingress` Ingress. Add the `tls` section to use the existing `app-tls` Secret for the host `app.andreascloud.local`.
 
 Also, add an annotation to the `web-app-ingress` Ingress to redirect all HTTP requests to HTTPS. Use the NGINX Ingress Controller annotation for SSL redirect.
 
@@ -423,10 +423,10 @@ spec:
   ingressClassName: nginx
   tls:
   - hosts:
-      - app.kodekloud.local
+      - app.andreascloud.local
     secretName: app-tls
   rules:
-  - host: app.kodekloud.local
+  - host: app.andreascloud.local
     http:
       paths:
       - path: /

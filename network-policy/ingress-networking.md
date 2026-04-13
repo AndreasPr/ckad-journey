@@ -67,7 +67,7 @@ Common options:
 
 ### Deployment
 
-```
+```yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -93,7 +93,7 @@ spec:
                 valueFrom:
                   fieldRef:
                     fieldPath: metadata.name
-              - name:
+              - name: POD_NAMESPACE
                 valueFrom:
                   fieldRef:
                     fieldPath: metadata.namespace
@@ -111,15 +111,17 @@ Used to externalize configuration like:
 * SSL settings
 * logging
 
-```
+```yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
     name: nginx-configuration
 ```
 
+This service exposes the controller to external traffic
+
 ## Service (Expose Ingress Controller)
-```
+```yaml
 apiVersion: v1
 kind: Service
 metadata:
@@ -137,18 +139,17 @@ spec:
         name: nginx-ingress
 ```
 
-This exposes the controller to external traffic
 
 
 ## Service Account
-```
+```yaml
 apiVersion: v1
 kind: ServiceAccount
 metadata:
     name: nginx-ingress-serviceaccount
 ```
 
-### Why needed?
+### Why needed Service Account?
 The Ingress Controller needs permissions to:
 * Watch Ingress resources
 * Watch Services and Endpoints
@@ -164,7 +165,7 @@ This is done via:
 Defines routing rules for external traffic.
 
 ## Basic Example (Default Backend)
-```
+```yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -176,7 +177,7 @@ spec:
             port: 80
 ```
 
-All traffic goes to wear-service.
+All traffic goes to `wear-service`.
 
 ## Ingress Rules
 
@@ -190,7 +191,7 @@ Behavior:
 
 Our requirement is to handle all traffic coming to my my-online-store.com and route them based on URL path. So, we need a single rule for this since we are only handling traffic to a single domain name, which is my-online-store.com in this case. So, paths is an array of multiple items, one path for each URL:
 
-```
+```yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -217,7 +218,7 @@ Behavior:
 * `wear.my-online-store.com` → wear-service
 * `watch.my-online-store.com` → watch-service
 
-```
+```yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -329,7 +330,7 @@ Use the NGINX Ingress Controller annotation for SSL redirect.
 
 ### Solution
 
-```
+```yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -379,13 +380,11 @@ Create an ingress resource to make the apps available at `/watch` and `/wear` on
 ```kubectl create ingress ingress-wear-watch -n app-space --rule="/wear=wear-service:8080" -- rule="/watch=video-service:8080"```
 
 Also, we should update the ingress by running the command: `kubectl edit ingress ingress-wear-watch -n app-space` and include the following under the `metadata` property:
-```
+```yaml
 annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
 ```
-
-
 
 
 # Ingress Rewrite Target (NGINX)
@@ -407,16 +406,12 @@ Assume we have two applications:
 
 - **Watch App** → serves content at:
 ```
-
 http://<watch-service>:<port>/
-
 ```
 
 - **Wear App** → serves content at:
 ```
-
 http://<wear-service>:<port>/
-
 ```
 
 ---
@@ -426,10 +421,8 @@ http://<wear-service>:<port>/
 We want users to access the applications via Ingress using:
 
 ```
-
 http://<ingress-service>:<port>/watch → watch-service
 http://<ingress-service>:<port>/wear  → wear-service
-
 ```
 
 ---
@@ -439,20 +432,16 @@ http://<ingress-service>:<port>/wear  → wear-service
 Without using `rewrite-target`, the request path is forwarded **as-is**:
 
 ```
-
 /watch → /watch
 /wear  → /wear
-
 ```
 
 So internally:
 
 ```
-
 http://<ingress>/watch → http://<watch-service>/watch
 http://<ingress>/wear  → http://<wear-service>/wear
-
-````
+```
 
 ---
 
@@ -471,9 +460,9 @@ Result:
 
 We use the annotation:
 
-```yaml
+```
 nginx.ingress.kubernetes.io/rewrite-target: /
-````
+```
 
 This rewrites incoming paths:
 

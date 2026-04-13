@@ -100,7 +100,7 @@ spec:
               ports:
               - name: http
                 containerPort: 80
-              - name: https:
+              - name: https
                 containerPort: 443
 ```
 
@@ -129,10 +129,12 @@ metadata:
 spec:
     type: NodePort
     ports:
-    - port: 80
+    - name: http
+      port: 80
       targetPort: 80
       protocol: TCP
-    - port:
+    - name: https
+      port: 443
       targetPort: 443
       protocol: TCP
     selector:
@@ -189,7 +191,7 @@ Behavior:
 * `/wear` → wear-service
 * `/watch` → watch-service
 
-Our requirement is to handle all traffic coming to my my-online-store.com and route them based on URL path. So, we need a single rule for this since we are only handling traffic to a single domain name, which is my-online-store.com in this case. So, paths is an array of multiple items, one path for each URL:
+Our requirement is to handle all traffic coming to my-online-store.com and route them based on URL path. So, we need a single rule for this since we are only handling traffic to a single domain name, which is my-online-store.com in this case. So, paths is an array of multiple items, one path for each URL:
 
 ```yaml
 apiVersion: networking.k8s.io/v1
@@ -359,7 +361,7 @@ spec:
 
 ### Scenario 2
 Create a service to make ingress available to external users. Specs:
-* Name: ignress
+* Name: ingress
 * Type: NodePort
 * Port: 80
 * TargetPort: 80
@@ -385,6 +387,59 @@ annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
 ```
+
+
+
+### Scenario 4
+In the `webapp` namespace, create an Ingress resource named `web-app-ingress`. Configure it to route traffic for the host `app.kodekloud.local` with path `/` (pathType: `Prefix`) to the existing `web-app` Service on port `80`.
+
+Use `apiVersion: networking.k8s.io/v1` and set `ingressClassName: nginx`.
+The Ingress Controller is already deployed - you only need to create the Ingress resource.
+
+* Ingress 'web-app-ingress' created in webapp namespace
+* Host: app.kodekloud.local
+* Path: /
+* Backend service: web-app
+* Backend service port: 80
+* IngressClassName: nginx
+
+Also, enable TLS termination on the `web-app-ingress` Ingress. Add the `tls` section to use the existing `app-tls` Secret for the host `app.kodekloud.local`.
+
+Also, add an annotation to the `web-app-ingress` Ingress to redirect all HTTP requests to HTTPS. Use the NGINX Ingress Controller annotation for SSL redirect.
+
+### Solution
+
+Create the file `ingress.yaml`:
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: web-app-ingress
+  namespace: webapp
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+      - app.kodekloud.local
+    secretName: app-tls
+  rules:
+  - host: app.kodekloud.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: web-app
+            port:
+              number: 80
+```
+
+Apply with: `kubectl apply -f ingress.yaml`
+
 
 
 # Ingress Rewrite Target (NGINX)

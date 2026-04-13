@@ -37,13 +37,13 @@ Kubernetes **does manage service accounts internally**.
 
 ## How Authentication Works
 
-All access to the cluster goes through the **kube-apiserver**, including:
+All access to the cluster goes through the `kube-apiserver`, including:
 
 - `kubectl` commands  
 - Direct API calls (e.g., using `curl`)  
 
 Example:
-```kubectl get pods````
+```kubectl get pods```
 
 or
 
@@ -53,7 +53,7 @@ or
 
 ### Authentication Flow
 
-1. Client sends request to kube-apiserver
+1. Client sends request to `kube-apiserver`
 2. API server verifies identity using configured authentication method
 3. If valid → request proceeds to authorization
 4. If invalid → request is rejected
@@ -67,7 +67,7 @@ or
 ### 1. Static Token File (NOT Recommended)
 
 * A file containing predefined user-token mappings
-* Passed to kube-apiserver using `--token-auth-file`
+* Passed to `kube-apiserver` using `--token-auth-file`
 
 Example token file:
 
@@ -88,7 +88,7 @@ curl -k https://<master-node-ip>:6443/api/v1/pods \
 
 * Tokens are static (no expiration)
 * Difficult to rotate and manage
-* Not secure for production environments
+* NOT secure for production environments
 
 ---
 
@@ -125,7 +125,7 @@ Benefits:
 
 ---
 
-### kube-apiserver is the Gatekeeper
+### `kube-apiserver` is the Gatekeeper
 
 * All requests MUST go through the API server
 * Authentication is always enforced before any operation
@@ -136,7 +136,7 @@ Benefits:
 
 If using static token files:
 
-* The file must be available to the kube-apiserver
+* The file must be available to the `kube-apiserver`
 * Typically mounted as a volume in kubeadm setups
 
 ---
@@ -147,7 +147,7 @@ Authentication only answers:
 
 "Who are you?"
 
-You must also configure authorization (e.g., RBAC) to answer:
+You must also configure authorization (e.g., `RBAC`) to answer:
 
 "What are you allowed to do?"
 
@@ -168,6 +168,6 @@ You must also configure authorization (e.g., RBAC) to answer:
 * Authentication verifies identity before allowing access
 * Kubernetes relies on external systems for user management
 * Service accounts are managed internally for workloads
-* kube-apiserver enforces authentication for all requests
+* `kube-apiserver` enforces authentication for all requests
 * Secure methods include certificates and identity providers
 

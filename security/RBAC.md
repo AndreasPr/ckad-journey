@@ -270,7 +270,7 @@ Run the command: `kubectl get roles --all-namespaces` or `kubectl get roles -A`
 In order to get the exact number immediately: `kubectl get roles -A --no-headers | wc -l`
 
 ## Scenario 3
-What are the resources the kube-proxy role in the kube-system namespace is given access to?
+What are the resources the `kube-proxy` role in the `kube-system` namespace is given access to?
 ## Solution
 Run the command: `kubectl describe role kube-proxy -n kube-system`
 
@@ -286,17 +286,21 @@ Use the `--as dev-user` option with `kubectl` to run commands as the `dev-user`
 ## Solution
 Run the command: `kubectl get pods --as dev-user`
 
+or 
+
+`kubectl auth can-i get pods --as dev-user`
+
 ## Scenario 6
 Create the necessary roles and role bindings required for the `dev-user` to create, list and delete pods in the `default` namespace.
 
 Use the given spec:
-* Role: developer
-* Role Resources: pods
-* Role Actions: list
-* Role Actions: create
-* Role Actions: delete
-* RoleBinding: dev-user-binding
-* RoleBinding: Bound to dev-user
+* Role: `developer`
+* Role Resources: `pods`
+* Role Actions: `list`
+* Role Actions: `create`
+* Role Actions: `delete`
+* RoleBinding: `dev-user-binding`
+* RoleBinding: Bound to `dev-user`
 
 ## Solution
 To create a Role:- `kubectl create role developer --namespace=default --verb=list,create,delete --resource=pods`
@@ -305,8 +309,9 @@ To create a RoleBinding:- `kubectl create rolebinding dev-user-binding --namespa
 
 OR
 
-Solution manifest file to create a role and rolebinding in the default namespace:
-```
+Solution manifest file to create a role and rolebinding in the `default` namespace:
+
+```yaml
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
@@ -320,7 +325,7 @@ rules:
 
 ---
 
-```
+```yaml
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
@@ -336,7 +341,7 @@ roleRef:
 ```
 
 ## Scenario 7
-A set of new roles and role-bindings are created in the blue namespace for the dev-user. However, the `dev-user` is unable to get details of the `dark-blue-app` pod in the blue namespace. Investigate and fix the issue.
+A set of new roles and role-bindings are created in the `blue` namespace for the `dev-user`. However, the `dev-user` is unable to get details of the `dark-blue-app` pod in the `blue` namespace. Investigate and fix the issue.
 
 
 We have created the required roles and rolebindings, but something seems to be wrong.
@@ -355,7 +360,7 @@ Append the below rule to the end of the file
 
 ```kubectl edit role developer -n blue```
 
-```
+```yaml
 - apiGroups:
   - apps
   resources:
@@ -363,8 +368,10 @@ Append the below rule to the end of the file
   verbs:
   - create
 ```
+
 So it looks like this:
-```
+
+```yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:

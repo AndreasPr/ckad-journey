@@ -6,7 +6,7 @@
 
 Authorization in Kubernetes is the process of **determining what an authenticated user, service, or component is allowed to do**.
 
-After a request is authenticated (identity verified), the **kube-apiserver evaluates permissions** to decide:
+After a request is authenticated (identity verified), the `kube-apiserver` evaluates permissions to decide:
 
 "Is this entity allowed to perform this action on this resource?"
 
@@ -28,7 +28,7 @@ Authorization ensures:
 
 ## Authorization Flow
 
-1. Request reaches kube-apiserver  
+1. Request reaches `kube-apiserver`
 2. Authentication verifies identity  
 3. Authorization evaluates permissions  
 4. Request is:
@@ -137,7 +137,7 @@ ABAC grants permissions based on **attributes**:
 ## How It Works
 
 * Policies are defined in a JSON file
-* Passed to kube-apiserver using:
+* Passed to `kube-apiserver` using:
 
 ```--authorization-policy-file=<file>```
 
@@ -212,7 +212,7 @@ Webhook allows Kubernetes to **delegate authorization decisions to an external s
 
 ## How It Works
 
-1. Request reaches kube-apiserver
+1. Request reaches `kube-apiserver`
 2. API server sends request details to an external service (via HTTP)
 3. External service evaluates the request
 4. Returns:

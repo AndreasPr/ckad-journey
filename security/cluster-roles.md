@@ -233,14 +233,22 @@ Kubernetes creates several ClusterRoles by default, such as:
 How many ClusterRoles do you see defined in the cluster?
 
 ## Solution
-Run the command: `kubectl get clusterroles --no-headers  | wc -l` or `kubectl get clusterroles --no-headers  -o json | jq '.items | length'`
+Run the command: `kubectl get clusterroles --no-headers  | wc -l` 
+
+or
+
+ `kubectl get clusterroles --no-headers  -o json | jq '.items | length'`
 
 
 ## Scenario 2
 How many ClusterRoleBindings exist on the cluster?
 
 ## Solution
-Run the command: `kubectl get clusterrolebindings --no-headers  | wc -l` or `kubectl get clusterrolebindings --no-headers  -o json | jq '.items | length'`
+Run the command: `kubectl get clusterrolebindings --no-headers  | wc -l` 
+
+or
+
+ `kubectl get clusterrolebindings --no-headers  -o json | jq '.items | length'`
 
 ## Scenario 3
 What namespace is the cluster-admin clusterrole part of?
@@ -259,7 +267,7 @@ Run the command: `kubectl describe clusterrolebinding cluster-admin`
 ## Scenario 5
 What level of permission does the cluster-admin role grant?
 
-Inspect the cluster-admin role's privileges.
+Inspect the `cluster-admin` role's privileges.
 
 ## Solution
 Run the command: `kubectl describe clusterrole cluster-admin`
@@ -271,7 +279,7 @@ A new user michelle joined the team. She will be focusing on the nodes in the cl
 ## Solution
 Solution manifest file to create a clusterrole and clusterrolebinding for `michelle` user:
 
-```
+```yaml
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
@@ -280,8 +288,11 @@ rules:
 - apiGroups: [""]
   resources: ["nodes"]
   verbs: ["get", "watch", "list", "create", "delete"]
+```
 
----
+After that, define the corresponding cluster role binding:
+
+```yaml
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
@@ -302,19 +313,19 @@ After save into a file, run the command `kubectl create -f <file-name>.yaml` to 
 
 Get the API groups and resource names from command kubectl api-resources. Use the given spec:
 
-- ClusterRole: storage-admin
-- Resource: persistentvolumes
-- Resource: storageclasses
-- ClusterRoleBinding: michelle-storage-admin
-- ClusterRoleBinding Subject: michelle
-- ClusterRoleBinding Role: storage-admin
+- ClusterRole: `storage-admin`
+- Resource: `persistentvolumes`
+- Resource: `storageclasses`
+- ClusterRoleBinding: `michelle-storage-admin`
+- ClusterRoleBinding Subject: `michelle`
+- ClusterRoleBinding Role: `storage-admin`
 
 
 ## Solution
 
 Solution manifest file to create a clusterrole and clusterrolebinding for michelle user:
 
-```
+```yaml
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:

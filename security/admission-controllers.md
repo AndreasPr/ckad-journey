@@ -40,7 +40,7 @@ Admission Controllers help enforce policies such as:
 
 Request → Authentication → Authorization → Admission Controllers → etcd
 
-````
+```
 
 - If ANY admission controller rejects the request → it fails
 - If all pass → object is created
@@ -132,37 +132,34 @@ There are two main types:
 
 # Important Clarification
 
-> Admission Controllers are NOT deprecated.
+**Admission Controllers are NOT deprecated.**
 
 However:
-- Some older controllers (like NamespaceAutoProvision) are less commonly used
+- Some older controllers (like `NamespaceAutoProvision`) are less commonly used
 - Newer mechanisms such as:
   - **ValidatingAdmissionWebhook**
   - **MutatingAdmissionWebhook**
   - **OPA (Open Policy Agent) / Gatekeeper**
+
 are now preferred for advanced policies
 
 ---
 
 # How to View Enabled Admission Controllers
 
----
 
 ## Standard command
 
 ```kube-apiserver -h | grep enable-admission-plugins```
 
----
 
 ## In kubeadm-based clusters
 
 ```kubectl exec kube-apiserver-controlplane -n kube-system -- kube-apiserver -h | grep enable-admission-plugins```
 
----
 
 # How to Enable/Disable Admission Controllers
 
----
 
 ## Enable controllers
 
@@ -188,11 +185,11 @@ Add or update:
 
 # Key Built-in Admission Controllers (Important Ones)
 
-* NamespaceLifecycle → ensures namespace rules
-* LimitRanger → enforces resource limits
-* ServiceAccount → auto-assigns service accounts
-* ResourceQuota → enforces namespace quotas
-* PodSecurity (replacement for PodSecurityPolicy)
+* `NamespaceLifecycle` → ensures namespace rules
+* `LimitRanger` → enforces resource limits
+* `ServiceAccount` → auto-assigns service accounts
+* `ResourceQuota` → enforces namespace quotas
+* `PodSecurity` (replacement for PodSecurityPolicy)
 
 ---
 
@@ -234,7 +231,7 @@ This directory contains the following files:
 
 Run the following commands to examine the files:
 
-```
+```bash
 ls -la /etc/kubernetes/imgvalidation/
 cat /etc/kubernetes/imgvalidation/admission-configuration.yaml
 cat /etc/kubernetes/imgvalidation/imagepolicy-conf.yaml
@@ -292,7 +289,7 @@ Edit `/etc/kubernetes/imgvalidation/kubeconf.yaml`:
 ```vi /etc/kubernetes/imgvalidation/kubeconf.yaml```
 
 Update the `server` field to the correct webhook endpoint:
-```
+```yaml
 apiVersion: v1
 kind: Config
 clusters:
@@ -318,14 +315,15 @@ users:
 
 Reconfigure the API server to enable the `ImagePolicyWebhook` admission plugin and ensure it can access the configuration files.
 
-- ImagePolicyWebhook admission plugin enabled on kube-apiserver?
-- admission-control-config-file flag set on kube-apiserver?
-- imgvalidation volume mounted in kube-apiserver?
+- `ImagePolicyWebhook` admission plugin enabled on `kube-apiserver`?
+- `admission-control-config-file` flag set on `kube-apiserver`?
+- `imgvalidation` volume mounted in `kube-apiserver`?
 
 ## Solution
 
 Edit `/etc/kubernetes/manifests/kube-apiserver.yaml`:
-```
+
+```bash
 cp /etc/kubernetes/manifests/kube-apiserver.yaml /opt/kube-apiserver.yaml.bak
 vi /etc/kubernetes/manifests/kube-apiserver.yaml
 ```
@@ -354,7 +352,59 @@ Add to `volumeMounts`:
 
 `kubectl get pods -n kube-system`
 
+
 ## Scenario 5
+Deploy the test resource defined in `~/test-deploy.yaml` to verify that the `ImagePolicyWebhook` is working correctly.
+The pod should be denied by the webhook because the image violates the image policy.
+You may delete and recreate this resource as needed.
+
+Run the following command:
+
+```kubectl apply -f ~/test-deploy.yaml```
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-deploy
+spec:
+  containers:
+  - name: nginx
+    image: nginx:latest
+```
+
+You should see an error message indicating that the image was denied by the webhook.
+
+
+## Solution
+Apply the test resource:
+
+```kubectl apply -f ~/test-deploy.yaml```
+
+You should see an error similar to:
+
+```bash
+Error from server (Forbidden): pods "test-deploy" is forbidden: image policy webhook backend denied one or more images: Images using latest tag are not allowed
+```
+
+This confirms that the `ImagePolicyWebhook` is correctly configured and the webhook is actively denying pods that use the `latest` image tag.
+
+If the pod is created successfully, the `ImagePolicyWebhook` is not configured correctly. Review the previous steps:
+
+1. Ensure `defaultAllow` is set to `false` in `/etc/kubernetes/imgvalidation/imagepolicy-conf.yaml`
+2. Ensure the webhook endpoint is correct in `/etc/kubernetes/imgvalidation/kubeconf.yaml`
+3. Ensure `ImagePolicyWebhook` is in the `--enable-admission-plugins` list
+4. Ensure `--admission-control-config-file` points to the correct admission config
+5. Ensure the imgvalidation volume is mounted in the `kube-apiserver` pod
+
+If needed, delete and recreate:
+
+```bash
+kubectl delete -f ~/test-deploy.yaml --ignore-not-found
+kubectl apply -f ~/test-deploy.yaml
+```
+
+## Scenario 6
 Which admission controller is enabled in this cluster which is normally disabled?
 
 ## Solution 

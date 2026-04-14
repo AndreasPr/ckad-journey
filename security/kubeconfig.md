@@ -16,7 +16,7 @@ When accessing the Kubernetes API directly, you must provide authentication deta
 
 Example using `curl`:
 
-```
+```bash
 curl https://my-kube-playground:6443/api/v1/pods \
   --key admin.key \
   --cert admin.crt \
@@ -25,7 +25,7 @@ curl https://my-kube-playground:6443/api/v1/pods \
 
 Or using `kubectl`:
 
-```
+```bash
 kubectl get pods \
   --server my-kube-playground:6443 \
   --client-key admin.key \
@@ -41,13 +41,11 @@ This becomes tedious and error-prone.
 
 Instead of passing parameters every time, you define them once in a kubeconfig file:
 
-```
-kubectl get pods --kubeconfig=config
-```
+```kubectl get pods --kubeconfig=config```
 
 By default, Kubernetes looks for the kubeconfig file at:
 
-```
+```bash
 $HOME/.kube/config
 ```
 
@@ -69,7 +67,7 @@ The `config` file has the following sections:
 
 Defines the Kubernetes clusters you can access.
 
-```
+```yaml
 clusters:
 - name: my-kube-playground
   cluster:
@@ -86,7 +84,7 @@ clusters:
 
 Defines authentication credentials.
 
-```
+```yaml
 users:
 - name: my-kube-admin
   user:
@@ -103,7 +101,7 @@ users:
 
 Links a **user to a cluster**.
 
-```
+```yaml
 contexts:
 - name: my-kube-admin@my-kube-playground
   context:
@@ -122,7 +120,7 @@ A context defines:
 
 The active context is defined by:
 
-```
+```yaml
 current-context: my-kube-admin@my-kube-playground
 ```
 
@@ -132,7 +130,7 @@ This determines the default cluster and user for all `kubectl` commands.
 
 ## Important Concept
 
-kubeconfig does NOT:
+`kubeconfig` does NOT:
 
 * Create users
 * Grant permissions
@@ -144,7 +142,7 @@ It simply **uses existing credentials and access rights**.
 
 ## Full Example
 
-```
+```yaml
 apiVersion: v1
 kind: Config
 
@@ -175,33 +173,35 @@ users:
 
 ### View kubeconfig
 
-```
-kubectl config view
-```
+```kubectl config view```
 
 ---
 
 ### Use a Specific kubeconfig File
 
-```
-kubectl config view --kubeconfig=my-custom-config
-```
+```kubectl config view --kubeconfig=my-custom-config```
 
 ---
 
 ### Switch Context
 
-```
-kubectl config use-context prod-user@production
-```
+```kubectl config use-context prod-user@production```
 
 ---
+
+### Get the current context, run the command
+
+```kubectl config --kubeconfig=/root/my-kube-config current-context```
+
+---
+
+
 
 ## Context with Namespace
 
 You can define a default namespace per context:
 
-```
+```yaml
 contexts:
 - name: admin@production
   context:
@@ -218,7 +218,7 @@ contexts:
 
 ### Using File Paths
 
-```
+```yaml
 clusters:
 - name: my-kube-playground
   cluster:
@@ -238,7 +238,7 @@ users:
 
 Instead of referencing files, you can embed certificate data:
 
-```
+```yaml
 clusters:
 - name: my-kube-playground
   cluster:
@@ -250,13 +250,17 @@ clusters:
 
 ### Encode Certificate
 
-```cat ca.crt | base64```
+```bash
+cat ca.crt | base64
+```
 
 ---
 
 ### Decode Certificate
 
-```echo <base64-string> | base64 --decode```
+```bash
+echo <base64-string> | base64 --decode
+```
 
 ---
 
@@ -272,7 +276,7 @@ clusters:
 
 # Scenarios
 ## Scenario 1
-We don't want to specify the kubeconfig file option on each kubectl command.
+We don't want to specify the `kubeconfig` file option on each kubectl command.
 Set the my-kube-config file as the default kubeconfig file and make it persistent across all sessions without overwriting the existing ~/.kube/config. Ensure any configuration changes persist across reboots and new shell sessions.
 Note: Don't forget to source the configuration file to take effect in the existing session. Example:
 `source ~/.bashrc`
@@ -284,7 +288,7 @@ Open your shell configuration file:
 `vi ~/.bashrc`
 
 Add one of these lines to export the variable:
-```
+```bash
 export KUBECONFIG=/root/my-kube-config
 # OR
 export KUBECONFIG=~/my-kube-config
@@ -303,10 +307,11 @@ With the current-context set to `research`, we are trying to access the cluster.
 
 
 Try running the `kubectl get pods` command and look for the error. All users certificates are stored at `/etc/kubernetes/pki/users`.
+
 ## Solution
 
 Before the fix , You will notice you cant get the pods in the cluster :
-```
+```bash
 controlplane ~ ➜  kubectl get pods
 error: unable to read client-cert /etc/kubernetes/pki/users/dev-user/developer-user.crt for dev-user due to open /etc/kubernetes/pki/users/dev-user/developer-user.crt: no such file or directory
 ```
@@ -314,17 +319,17 @@ error: unable to read client-cert /etc/kubernetes/pki/users/dev-user/developer-u
 Solution steps:
 
 1. Identify the Current Certificate Path
-```
+```bash
 kubectl config view --kubeconfig=/root/my-kube-config | grep -A5 "name: dev-user"
 ```
 
 2. Verify the Actual Certificate Location
-```
+```bash
 ls -l /etc/kubernetes/pki/users/dev-user/
 ```
 
 3. Edit the Kubeconfig File
-```
+```bash
 kubectl config set-credentials dev-user \
   --client-certificate=/etc/kubernetes/pki/users/dev-user/dev-user.crt \
   --client-key=/etc/kubernetes/pki/users/dev-user/dev-user.key \
@@ -332,7 +337,7 @@ kubectl config set-credentials dev-user \
 ```
 
 4. Test Cluster Access
-```
+```bash
 controlplane ~ ➜  kubectl get pods
 No resources found in default namespace.
 ```

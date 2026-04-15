@@ -368,7 +368,7 @@ Important for dry-run requests
 
 # Scenarios
 ## Scenario 1
-Create a TLS secret named webhook-server-tls in the webhook-demo namespace.
+Create a TLS secret named `webhook-server-tls` in the `webhook-demo` namespace.
 This secret will be used by the admission webhook server for secure communication over HTTPS.
 We have already created below cert and key for webhook server which should be used to create secret.
 Certificate : `/root/keys/webhook-server-tls.crt`
@@ -376,7 +376,8 @@ Key : `/root/keys/webhook-server-tls.key`
 
 ## Solution
 Run below command:
-```
+
+```bash
 kubectl -n webhook-demo create secret tls webhook-server-tls \
     --cert "/root/keys/webhook-server-tls.crt" \
     --key "/root/keys/webhook-server-tls.key"
@@ -485,6 +486,18 @@ webhooks:
     sideEffects: None
 ```
 
+Also, deploy the `MutatingWebhookConfiguration` in `/root/webhook-configuration.yaml` by running:
+```kubectl create -f /root/webhook-configuration.yaml```
+
+
+## Notes
+In the previous steps, you have set up and deployed a demo webhook with the following behaviors:
+
+- Denies all requests for pods to run as root in a container if no `securityContext` is provided.
+- Defaults: If `runAsNonRoot` is not set, the webhook automatically adds `runAsNonRoot: true` and sets the user ID to `1234`.
+- Explicit root access: The webhook allows containers to run as root only if you explicitly set `runAsNonRoot: false` in the pod's `securityContext`.
+
+In the next steps, you will find pod definition files for each scenario. Please deploy these pods using the provided definition files and validate the behavior of our webhook.
 
 
 ## Scenario 5
@@ -514,7 +527,8 @@ spec:
 
 
 ## Scenario 6
-Check the securityContext of the pod created in the previous step (pod-with-defaults).
+Check the `securityContext` of the pod created in the previous step (pod-with-defaults).
+
 ## Solution
 Even though we did not specify any values in the pod definition, the mutation webhook should have injected default values.
 
@@ -572,9 +586,10 @@ Validate securityContext after you deploy this pod.
 Run command:
 
 `kubectl apply -f /root/pod-with-override.yaml`
+
 then validate `securityContext` using the following command:
 
-`kubectl get po pod-with-override -o yaml | grep -A2 " securityContext:"`
+`kubectl get pod pod-with-override -o yaml | grep -A2 " securityContext:"`
 
 ```yaml
 apiVersion: v1
@@ -594,10 +609,10 @@ spec:
 ```
 
 ## Scenario 8
-Deploy a pod that specifies a conflicting securityContext.
+Deploy a pod that specifies a conflicting `securityContext`.
 
-The pod requests to run with `runAsUser: 0` (root).
-But it does not explicitly set `runAsNonRoot: false`.
+- The pod requests to run with `runAsUser: 0` (root).
+- But it does not explicitly set `runAsNonRoot: false`.
 
 According to our webhook rules, this request should be denied.
 
@@ -607,6 +622,24 @@ We have already provided the manifest at: `/root/pod-with-conflict.yaml`
 ## Solution
 
 Run command: `kubectl apply -f /root/pod-with-conflict.yaml`
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-with-conflict
+  labels:
+    app: pod-with-conflict
+spec:
+  restartPolicy: OnFailure
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 0
+  containers:
+    - name: busybox
+      image: busybox
+      command: ["sh", "-c", "echo I am running as user $(id -u)"]
+```
 
 Expected Outcome:
 The admission webhook should reject this pod. You will see an error similar to:

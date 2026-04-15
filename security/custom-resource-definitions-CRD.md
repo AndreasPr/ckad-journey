@@ -383,6 +383,7 @@ Kubernetes ecosystem uses CRDs heavily:
 
 
 # Scenarios
+
 ## Scenario 1
 We have provided an incomplete `Custom Resource Definition (CRD)` manifest located at `/root/crd.yaml`.
 
@@ -440,7 +441,26 @@ spec:
 
 Also make sure to create custom resource using `kubectl create -f custom.yaml` after correcting and creating CRD.
 
+## Scenario 2
+Create a custom resource instance named `datacenter` utilizing the existing Custom Resource Definition (CRD) with the following specifications:
 
+- apiVersion: traffic.controller/v1
+- kind: Global
 
+Set the following fields under spec:
 
+- dataField: 2
+- access: true
 
+## Solution
+To create a custom resource called `datacenter` :
+
+```yaml
+kind: Global
+apiVersion: traffic.controller/v1
+metadata:
+  name: datacenter
+spec:
+  dataField: 2
+  access: true
+```

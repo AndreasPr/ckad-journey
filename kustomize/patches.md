@@ -440,7 +440,7 @@ spec:
 ```yaml
 patches:
     - target:
-        kind: name: Deployment
+        kind: Deployment
         name: api-deployment
       patch: |-
         - op: add
@@ -601,3 +601,116 @@ spec:
     * Environment-specific changes
 
 Patches are essential when transformers are too broad and you need targeted modifications.
+
+
+# Scenarios
+
+## Scenario 1
+In `api-patch.yaml` create a *strategic merge* patch to remove the `memcached` container.
+
+Here is the `api-depl.yaml`:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: api
+  template:
+    metadata:
+      labels:
+        component: api
+    spec:
+      containers:
+        - name: nginx
+          image: nginx
+        - name: memcached
+          image: memcached
+```
+
+Here is the `kustomization.yaml`:
+
+```yaml
+resources:
+  - mongo-depl.yaml
+  - api-depl.yaml
+  - mongo-service.yaml
+
+patches:
+  - path: api-patch.yaml
+```
+
+
+## Solution
+
+`api-patch.yaml` file
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-deployment
+spec:
+  template:
+    spec:
+      containers:
+        - $patch: delete
+          name: memcached
+```
+
+
+Let's apply the config too:
+
+```kubectl apply -k /root/code/k8s/```
+
+
+
+
+## Scenario 2
+Create an `inline json6902` patch in the `kustomization.yaml` file to `remove` the label `org: andreas` from the `mongo-deployment`.
+
+The `mongo-depl.yaml` is:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongo-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: mongo
+  template:
+    metadata:
+      labels:
+        component: mongo
+        org: Andreas
+    spec:
+      containers:
+        - name: mongo
+          image: mongo
+```
+
+## Solution
+
+`kustomization.yaml`
+
+```yaml
+patches:
+  - target:
+      kind: Deployment
+      name: mongo-deployment
+    patch: |-
+      - op: remove
+        path: /spec/template/metadata/labels/org
+```
+
+Let's apply the config too:
+```kubectl apply -k /root/code/k8s/```
+
+
+

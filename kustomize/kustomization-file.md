@@ -426,3 +426,171 @@ kubectl apply -k <directory>
 * The **brain of Kustomize**
 * Defines **what to include** and **how to modify it**
 * Used to generate final Kubernetes manifests
+
+
+
+# Scenarios
+## Scenario 1
+How many directories have been `pre-defined` in the `k8s` directory?
+
+## Solution
+We could either count the directories one by one from the `file explorer` to the left of VS Code window or run the below command in the terminal:
+```bash
+controlplane ~/code/k8s ➜  ls /root/code/k8s | wc -l
+```
+
+## Scenario 2
+Let's create a single `kustomization.yaml` file in the root of the `k8s` directory and import all resources defined for `db`, `message-broker`, `nginx` into it.
+
+Please ensure to `apply` the config after creating kustomization.yaml file.
+
+## Solution
+
+Create a `kustomization.yaml` file with the following content under the `/root/code/k8s` directory:
+
+```yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# kubernetes resources to be managed by kustomize
+resources:
+  - db/db-config.yaml
+  - db/db-depl.yaml
+  - db/db-service.yaml
+  - message-broker/rabbitmq-config.yaml
+  - message-broker/rabbitmq-depl.yaml
+  - message-broker/rabbitmq-service.yaml
+  - nginx/nginx-depl.yaml
+  - nginx/nginx-service.yaml
+```
+
+Now let's apply the config:
+
+```bash
+controlplane ~/code/k8s ➜  pwd
+/root/code/k8s
+
+controlplane ~/code/k8s ➜  kubectl apply -k .
+-----------OR---------------
+controlplane ~/code ➜  kustomize build k8s/ | kubectl apply -f -
+```
+
+
+## Scenario 3
+How many pods were deployed?
+
+In the current(default) namespace.
+
+
+## Solution
+We can count the number of pods deployed using the below command in the terminal:
+
+```kubectl get pods --no-headers | wc -l```
+
+
+## Scenario 4
+What is the `type` of the service that has been deployed for the `message-broker`?
+
+## Solution
+
+In the `rabbitmq-service.yaml` file, the service is defined as a `clusterIP` service.
+
+
+```bash
+controlplane code/k8s/message-broker ➜  cat rabbitmq-service.yaml 
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbit-cluster-ip-service
+spec:
+  type: ClusterIP
+  selector:
+    component: redis
+  ports:
+    - port: 5672
+      targetPort: 5672
+```
+
+OR
+
+We can list the services as follows, and look at the `Type` column for the service called `rabbit-cluster-ip-service`:
+```bash
+controlplane ~ ➜  kubectl get svc
+```
+
+
+
+## Scenario 5
+
+Let's create a `kustomization.yaml` file in each of the `subdirectories` and import only the resources within that directory.
+
+Please ensure to specify those directories within the root `kustomization.yaml` file.
+
+NOTE: Don't forget to deploy the resources.
+
+## Solution
+
+We need to create `kustomization.yaml` in each of the subdirectories as follows:
+
+```bash
+controlplane ~/code ➜  tree
+.
+└── k8s
+    ├── db
+    │   └── kustomization.yaml
+    ├── kustomization.yaml
+    ├── message-broker
+    │   └── kustomization.yaml
+    └── nginx
+        └── kustomization.yaml
+4 directories, 12 files
+```
+
+
+`kustomization.yaml` file for `k8s/db`:
+```yaml
+resources:
+  - db-depl.yaml
+  - db-service.yaml
+  - db-config.yaml
+```
+
+
+`kustomization.yaml` file for `k8s/message-broker`:
+```yaml
+resources:
+  - rabbitmq-config.yaml
+  - rabbitmq-depl.yaml
+  - rabbitmq-service.yaml
+```
+
+
+`kustomization.yaml` file for `k8s/nginx`:
+```yaml
+resources:
+  - nginx-depl.yaml
+  - nginx-service.yaml
+```
+
+
+Root `kustomization.yaml` file for `k8s` directory:
+```yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# kubernetes resources to be managed by kustomize
+resources:
+  - db/
+  - message-broker/
+  - nginx/
+#Customizations that need to be made
+```
+
+Finally after defining each `kustomization.yaml` file let's apply our configuration:
+
+```bash
+controlplane ~/code ➜  kubectl apply -k /root/code/k8s/
+--------------OR---------------
+controlplane ~/code ➜  kustomize build /root/code/k8s/ | kubectl apply -f -
+```

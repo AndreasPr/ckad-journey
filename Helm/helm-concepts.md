@@ -194,7 +194,7 @@ This installs:
 
 ---
 
-## Overriding Values (Important for Interviews)
+## Overriding Values
 
 ### Option 1: CLI
 
@@ -281,3 +281,94 @@ Helm processes Go templates and replaces placeholders with values from:
 * `values.yaml` controls configuration centrally
 * Templates dynamically inject those values
 * Charts can be reused, customized, and versioned easily
+
+
+# Scenarios
+## Scenario 1
+Which command is used to search for a `wordpress` helm chart package from the `Artifact Hub`?
+
+## Solution
+Run `helm search hub chart-name` command to search specific charts on `Artifact Hub`.
+
+Note: Replace the `chart-name` with the original name.
+
+## Scenario 2
+Add a `bitnami` helm chart repository in the `controlplane` node.
+
+name - `bitnami`
+
+chart repo name - `https://charts.bitnami.com/bitnami`
+
+## Solution
+Run the command: `helm repo add bitnami https://charts.bitnami.com/bitnami`
+
+## Scenario 3
+Which command is used to search for the `joomla` package from the added repository?
+
+## Solution
+Run `helm search repo joomla` command to search specific package from all the added repository.
+
+## Scenario 4
+How many `helm` repositories are added in the `controlplane` node?
+
+## Solution
+Run the command: `helm repo list`
+
+
+## Scenario 5
+Install `drupal` helm chart from the `bitnami` repository.
+
+Release name should be `bravo`.
+
+Chart name should be `bitnami/drupal`.
+
+Note: Ignore the state of the application now.
+
+## Solution
+Run the command: `helm install bravo bitnami/drupal` and after that run the `helm list` command to verify it's installation.
+
+
+## Scenario 6
+Uninstall the `drupal` helm package which we installed earlier.
+
+## Solution
+Run the command: `helm uninstall bravo`
+
+## Scenario 7
+Download the `bitnami apache` package under the `/root` directory with version `10.1.1`
+
+Note: Do not install the package. Just download it.
+
+## Solution
+Run the command: `helm pull --untar  bitnami/apache --version 10.1.1`
+
+## Scenario 8
+Install the `apache` Helm chart from the downloaded package.
+
+Release name: `mywebapp`
+
+Note: Do make changes accordingly so that 2 replicas of the webserver are running and the `http` is exposed on nodeport `30080`.
+
+Make sure that the pods are in the ready & running state.
+
+## Solution
+Once you have modified the `values.yaml` file , run the below command to install the `apache` package on the `controlplane` node:
+
+```bash
+root@controlplane:~# helm install mywebapp ./apache
+```
+
+After installation, run the below command to list the `mywebapp` release:
+```bash
+root@controlplane:~# helm list     
+NAME            NAMESPACE       REVISION        UPDATED                                 STATUS          CHART            APP VERSION
+mywebapp        default         1               2024-12-03 14:11:17.237760871 +0000 UTC deployed        apache-11.2.22   2.4.62   
+```
+
+
+
+
+
+
+
+

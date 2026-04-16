@@ -169,3 +169,88 @@ Transformers in Kustomize:
 * Modify resources dynamically during build time
 * Apply changes globally across all manifests
 * Help maintain clean, DRY (Don't Repeat Yourself) configurations
+
+
+# Scenarios
+
+## Scenario 1
+What is the `label` that will get assigned to every Kubernetes resource within `/root/code/k8s/` project?
+
+## Solution
+The question asked for a `label` that will be assigned to every resource. This means a `commonLabels` transformer will be applied on the root `kustomization.yaml` file in `k8s` directory .i.e. `k8s/kustomization.yaml`
+
+`k8s/kustomization.yaml`
+```yaml
+commonLabels:
+  sandbox: dev
+```
+
+
+## Scenario 2
+What is the name that will be `prefixed` before all database resources?
+
+## Solution
+All database resources includes both `sql` and `nosql` configs. Inside the `kustomization.yaml` file in the `db` directory the `namePrefix` transformer will be applied.
+
+`k8s/db/kustomization.yaml`
+```yaml
+namePrefix: data-
+```
+
+## Scenario 3
+What is the namespace that all the monitoring resources will be deployed to?
+
+## Solution
+The `kustomization.yaml` file in the `monitoring` directory has a `namespace` transformer set to `logging`.
+
+`k8s/monitoring/kustomization.yaml`
+```yaml
+namespace: logging
+```
+
+
+## Scenario 4
+Assign the following annotation to all `nginx` and `monitoring` resources:
+```
+owner: bob@gmail.com
+```
+
+## Solution
+As we want to apply the annotation only to `nginx` and `monitoring` resources, we will modify the following files as shown below:
+
+`k8s/nginx/kustomization.yaml` and `k8s/monitoring/kustomization.yaml`
+
+```yaml
+commonAnnotations:
+  owner: bob@gmail.com
+```
+
+## Scenario 5
+Transform all `postgres` images in the project to `mysql`.
+
+## Solution
+Since the requirement was to change all postgres images to mysql this means adding an `image` transformer to the `root kustomization.yaml` file.
+
+`k8s/kustomization.yaml`
+
+```yaml
+images:
+  - name: postgres
+    newName: mysql
+```
+
+
+## Scenario 6
+Transform all `nginx` images in the nginx directory to `nginx:1.23`.
+
+## Solution
+For this task, the `kustomization.yaml` file in the `nginx` directory needs to be modified with an `image` transformer.
+
+Since the image itself isn’t changing and only a `new tag` is getting assigned, add the `newTag` property as shown below:
+
+`k8s/nginx/kustomization.yaml`
+```yaml
+images:
+  - name: nginx
+    newTag: "1.23"
+```

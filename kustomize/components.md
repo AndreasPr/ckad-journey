@@ -260,3 +260,101 @@ Final result:
   * monitoring
 
 They help you build **flexible, composable Kubernetes configurations** at scale.
+
+# Scenarios
+
+## Scenario 1
+A new `caching` component needs to be created for the application.
+
+There is already a directory located at:
+`project_mercury/components/caching/`
+
+
+This directory contains the following files:
+
+- `redis-depl.yaml`
+- `redis-service.yaml`
+
+Finish setting up this component by creating a `kustomization.yaml` file in the same directory and importing the above Redis configuration files.
+
+## Solution
+
+Create a `kustomization.yaml` file inside the `components/caching/` directory with the following content:
+```yaml
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+
+resources:
+  - redis-depl.yaml
+  - redis-service.yaml
+```
+
+This defines the caching component using Kustomize and includes the required Redis resources for deployment.
+
+
+
+
+## Scenario 2
+With the database setup for the `caching` component complete, we now need to update the `api-deployment` so that it can connect to the Redis instance.
+
+Create a **Strategic Merge Patch** to add the following environment variable to the container in the deployment:
+
+- Name: `REDIS_CONNECTION`
+- Value: `redis-service`
+
+Note:
+
+- The patch file must be created at:
+`project_mercury/components/caching/` with name `api-patch.yaml`
+
+- After creating the patch file, you must also update the `kustomization.yaml` file in the same directory (`components/caching/`) to include this patch under the `patches` field.
+
+This step is essential — without updating `kustomization.yaml`, the patch will not be applied when the component is used in an overlay.
+
+## Solution
+
+Navigate to the `/root/code/project_mercury/` directory.
+
+1. Create the patch file
+
+Location: `components/caching/api-patch.yaml`
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-deployment
+spec:
+  template:
+    spec:
+      containers:
+        - name: api
+          env:
+            - name: REDIS_CONNECTION
+              value: redis-service
+```
+
+This patch ensures that the `api` container can access Redis using the specified environment variable.
+
+2. Update the component's `kustomization.yaml`
+
+Location: `components/caching/kustomization.yaml`
+
+Ensure that the `kustomization.yaml` file includes the `api-patch.yaml` under the `patches` field
+
+```yaml
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+
+resources:
+  - redis-depl.yaml
+  - redis-service.yaml
+
+patches:
+  - path: api-patch.yaml
+```
+
+Note:
+- If you want to apply this component independently (e.g., using `kubectl apply -k components/caching/`), you will need to include `../../base/` in the `resources` field so that Kustomize can locate the original `api-deployment` for patching.
+
+- However, when this component is used within an overlay like `overlays/enterprise/`, the `base` is already included at a higher level. Adding `../../base/` again inside the component will cause a duplicate resource error during `kubectl apply -k overlays/enterprise/`.

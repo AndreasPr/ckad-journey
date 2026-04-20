@@ -249,3 +249,179 @@ spec:
       type: DirectoryOrCreate
     name: log-volume
 ```
+
+
+
+
+## Scenario 3
+In your Kubernetes cluster, perform the following:
+
+1. Create a Pod named `busybox` with two containers.
+2. Both containers must use the `busybox` image.
+3. Both containers must run the command:
+   `/bin/sh -c "echo hello; sleep 3600"`
+4. Name the containers:
+   - `busybox`
+   - `busybox2`
+5. Once the Pod is running, execute the command ls inside the container `busybox2`.
+
+## Expected Outcome
+
+* Pod busybox is in Running state
+* Both containers are running
+* Command ls is successfully executed in container busybox2
+
+## Constraints
+
+* Do not use external YAML files unless necessary
+* Use kubectl commands where possible
+* You may edit resources if needed
+
+
+## Solution
+
+### Step 1: Generate a base Pod YAML
+```bash
+kubectl run busybox \
+  --image=busybox \
+  --restart=Never \
+  --dry-run=client -o yaml \
+  -- /bin/sh -c 'echo hello; sleep 3600' > pod.yaml
+```
+
+### Step 2: Modify YAML to include a second container
+
+Edit `pod.yaml` and update:
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox
+spec:
+  containers:
+  - name: busybox
+    image: busybox
+    args:
+    - /bin/sh
+    - -c
+    - echo hello; sleep 3600
+
+  - name: busybox2
+    image: busybox
+    args:
+    - /bin/sh
+    - -c
+    - echo hello; sleep 3600
+```
+
+### Step 3: Create the Pod
+`kubectl apply -f pod.yaml`
+
+### Step 4: Execute command in the second container
+`kubectl exec -it busybox -c busybox2 -- ls`
+
+Or open a shell:
+
+`kubectl exec -it busybox -c busybox2 -- /bin/sh`
+
+### Step 5: Cleanup
+`kubectl delete pod busybox`
+
+
+## Scenario 4
+Create a Pod that serves static content generated at startup.
+
+1. Create a Pod named box with:
+
+   * A main container:
+     Image `nginx`
+     Expose port `80`
+   * An init container:
+     Image `busybox`
+     Command:
+     `/bin/sh -c "echo Test > /work-dir/index.html"`
+
+2. Configure a shared volume:
+
+   * Type `emptyDir`
+   * Mount paths:
+     Init container to `/work-dir`
+     Nginx container to `/usr/share/nginx/html`
+
+3. After the Pod is running:
+
+   * Retrieve the Pod IP
+   * Launch a temporary busybox Pod and verify the content using `wget`
+
+## Expected Outcome
+
+* Pod box is in Running state
+* Init container completes successfully
+* Accessing the Pod IP returns:
+  Test
+
+## Constraints
+
+* Use a single Pod
+* Do not use Services
+* Use kubectl commands or YAML
+* Verification must be done from inside the cluster
+
+
+
+## Solution
+
+### Step 1: Create full Pod YAML
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: box
+spec:
+  initContainers:
+  - name: init-busybox
+    image: busybox
+    command:
+    - /bin/sh
+    - -c
+    - echo "Test" > /work-dir/index.html
+    volumeMounts:
+    - name: vol
+      mountPath: /work-dir
+
+  containers:
+  - name: nginx
+    image: nginx
+    ports:
+    - containerPort: 80
+    volumeMounts:
+    - name: vol
+      mountPath: /usr/share/nginx/html
+
+  volumes:
+  - name: vol
+    emptyDir: {}
+```
+
+### Step 2: Apply the Pod
+`kubectl apply -f pod-init.yaml`
+
+
+### Step 3: Get the Pod IP
+`kubectl get pod box -o wide`
+
+
+### Step 4: Test using a temporary BusyBox Pod
+```bash
+kubectl run test \
+  --image=busybox \
+  --restart=Never -it --rm \
+  -- /bin/sh -c "wget -O- $(kubectl get pod box -o jsonpath='{.status.podIP}')"
+```
+
+Expected output:
+
+Test
+
+### Step 5: Cleanup
+`kubectl delete pod box`

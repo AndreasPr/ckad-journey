@@ -508,3 +508,140 @@ Apply:
 ```bash
 kubectl apply -f job.yaml
 ```
+
+# CronJob Scenarios
+
+
+## Task 1: Create a CronJob
+
+Create a CronJob with the following specifications:
+- Name: busybox
+- Image: busybox
+- Schedule: every 1 minute
+- Command:
+  date; echo Hello from the Kubernetes cluster
+
+### Solution
+```bash
+kubectl create cronjob busybox \
+  --image=busybox \
+  --schedule="*/1 * * * *" \
+  -- /bin/sh -c 'date; echo Hello from the Kubernetes cluster'
+````
+
+---
+
+## Task 2: View Logs and Delete CronJob
+
+### Solution
+
+```bash
+kubectl get pods
+kubectl logs <pod-name>
+kubectl delete cronjob busybox
+```
+
+---
+
+## Task 3: Observe CronJob Execution
+
+Recreate the CronJob and monitor execution.
+
+### Solution
+
+```bash
+kubectl create cronjob busybox \
+  --image=busybox \
+  --schedule="*/1 * * * *" \
+  -- /bin/sh -c 'date; echo Hello from the Kubernetes cluster'
+
+kubectl get cronjobs
+kubectl get jobs --watch
+kubectl get pods --show-labels
+kubectl logs <pod-name>
+kubectl delete cronjob busybox
+```
+
+---
+
+## Task 4: Set Starting Deadline
+
+Create a CronJob that fails if it does not start within 17 seconds of its scheduled time.
+
+### Solution
+
+```yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: time-limited-job
+spec:
+  schedule: "* * * * *"
+  startingDeadlineSeconds: 17
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: job
+            image: busybox
+            command:
+            - /bin/sh
+            - -c
+            - date; echo Hello from the Kubernetes cluster
+          restartPolicy: Never
+```
+
+Apply:
+
+```bash
+kubectl apply -f cronjob.yaml
+```
+
+---
+
+## Task 5: Set Execution Deadline
+
+Create a CronJob that is terminated if it runs longer than 12 seconds.
+
+### Solution
+
+```yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: time-limited-job
+spec:
+  schedule: "* * * * *"
+  jobTemplate:
+    spec:
+      activeDeadlineSeconds: 12
+      template:
+        spec:
+          containers:
+          - name: job
+            image: busybox
+            command:
+            - /bin/sh
+            - -c
+            - date; echo Hello from the Kubernetes cluster
+          restartPolicy: Never
+```
+
+Apply:
+
+```bash
+kubectl apply -f cronjob.yaml
+```
+
+---
+
+## Task 6: Create Job from CronJob
+
+Create a one-time Job from an existing CronJob.
+
+### Solution
+
+```bash
+kubectl create job sample-job --from=cronjob/sample-cron-job
+```

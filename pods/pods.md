@@ -169,3 +169,305 @@ Then:
 
 ### Create or update Kubernetes resources defined in the {filename}.yaml file. It ensures the cluster state matches the configuration in that file.
 ```kubectl apply -f pod-definition.yaml ```
+
+# Scenarios - Tasks
+
+## Task 1: Create Pods with Labels
+
+Create three Pods with the following specifications:
+- Names: nginx1, nginx2, nginx3
+- Image: nginx
+- Label: app=v1
+
+### Solution
+```bash
+kubectl run nginx1 --image=nginx --restart=Never --labels=app=v1
+kubectl run nginx2 --image=nginx --restart=Never --labels=app=v1
+kubectl run nginx3 --image=nginx --restart=Never --labels=app=v1
+```
+
+Alternatively:
+```bash
+for i in `seq 1 3`; do kubectl run nginx$i --image=nginx -l app=v1; done
+```
+
+## Task 2: Show Labels of All Pods
+
+### Solution
+
+```bash
+kubectl get pods --show-labels
+```
+
+---
+
+## Task 3: Update Label of a Pod
+
+Change the label of pod nginx2 to app=v2.
+
+### Solution
+
+```bash
+kubectl label pod nginx2 app=v2 --overwrite
+```
+
+---
+
+## Task 4: Display Pods with Label Column
+
+Show all Pods with a column displaying the app label.
+
+### Solution
+
+```bash
+kubectl get pods -L app
+```
+
+---
+
+## Task 5: Filter Pods by Label
+
+Get only Pods with label app=v2.
+
+### Solution
+
+```bash
+kubectl get pods -l app=v2
+```
+
+---
+
+## Task 6: Filter Pods with Multiple Conditions
+
+Get Pods with app=v2 and not tier=frontend.
+
+### Solution
+
+```bash
+kubectl get pods -l app=v2,tier!=frontend
+```
+
+---
+
+## Task 7: Add Label to Multiple Pods
+
+Add label tier=web to all Pods with app=v1 or app=v2.
+
+### Solution
+
+```bash
+kubectl label pods -l "app in (v1,v2)" tier=web
+```
+
+---
+
+## Task 8: Add Annotation
+
+Add annotation owner=marketing to all Pods with app=v2.
+
+### Solution
+
+```bash
+kubectl annotate pods -l app=v2 owner=marketing
+```
+
+---
+
+## Task 9: Remove Label
+
+Remove the label app from all three Pods.
+
+### Solution
+
+```bash
+kubectl label pods nginx1 nginx2 nginx3 app-
+```
+
+---
+
+## Task 10: Add Annotation to Specific Pods
+
+Annotate nginx1, nginx2, nginx3 with description="my description".
+
+### Solution
+
+```bash
+kubectl annotate pods nginx1 nginx2 nginx3 description="my description"
+```
+
+---
+
+## Task 11: Check Annotations
+
+Check annotations for pod nginx1.
+
+### Solution
+
+```bash
+kubectl describe pod nginx1
+```
+
+---
+
+## Task 12: Remove Annotations
+
+Remove annotations description and owner from the Pods.
+
+### Solution
+
+```bash
+kubectl annotate pods nginx1 nginx2 nginx3 description- owner-
+```
+
+---
+
+## Task 13: Cleanup
+
+Delete the created Pods.
+
+### Solution
+
+```bash
+kubectl delete pods nginx1 nginx2 nginx3
+```
+
+---
+
+# Pod Placement
+
+## Task 14: Schedule Pod Using Node Label
+
+Create a Pod that runs on a node with label:
+accelerator=nvidia-tesla-p100
+
+### Solution
+
+Label a node:
+
+```bash
+kubectl label nodes <node-name> accelerator=nvidia-tesla-p100
+```
+
+Pod YAML:
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: cuda-test
+spec:
+  containers:
+  - name: cuda-test
+    image: k8s.gcr.io/cuda-vector-add:v0.1
+  nodeSelector:
+    accelerator: nvidia-tesla-p100
+```
+
+---
+
+## Task 15: Use Node Affinity
+
+### Solution
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: affinity-pod
+spec:
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: accelerator
+            operator: In
+            values:
+            - nvidia-tesla-p100
+  containers:
+  - name: nginx
+    image: nginx
+```
+
+---
+
+## Task 16: Schedule Pod to Specific Node
+
+Create a Pod that runs on node node01 using nodeName.
+
+### Solution
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nodename-pod
+spec:
+  nodeName: node01
+  containers:
+  - name: nginx
+    image: nginx
+```
+
+---
+
+## Task 17: Taints and Tolerations
+
+Taint a node and create a Pod that tolerates it.
+
+### Solution
+
+Taint node:
+
+```bash
+kubectl taint node node1 tier=frontend:NoSchedule
+```
+
+Pod YAML:
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: frontend
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+  tolerations:
+  - key: "tier"
+    operator: "Equal"
+    value: "frontend"
+    effect: "NoSchedule"
+```
+
+---
+
+## Task 18: Schedule Pod on Control Plane Node
+
+Create a Pod that runs on node controlplane using nodeSelector and tolerations.
+
+### Solution
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: frontend
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+  nodeSelector:
+    kubernetes.io/hostname: controlplane
+  tolerations:
+  - key: "node-role.kubernetes.io/control-plane"
+    operator: "Exists"
+    effect: "NoSchedule"
+```
+
+Apply:
+
+```bash
+kubectl apply -f pod.yaml
+```

@@ -254,7 +254,6 @@ Defines containers and runtime behavior
 * Runs every 1 minute
 
 
-
 ### Create CronJob
 ```kubectl create -f cron-job-definition.yaml```
 
@@ -263,11 +262,6 @@ Defines containers and runtime behavior
 
 ### View Logs
 ```kubectl logs <pod-name>```
-
-
-
-
-
 
 
 ## Important CronJob Options
@@ -338,3 +332,179 @@ Always configure:
 * History limits
 
 Prevents resource leaks and overlapping executions.
+
+
+# Scenarios
+
+## Task 1: Create a Job to Calculate Pi
+
+Create a Job named pi with the following specifications:
+- Image: perl:5.34
+- Command:
+  perl -Mbignum=bpi -wle 'print bpi(2000)'
+
+### Solution
+```bash
+kubectl create job pi --image=perl:5.34 -- perl -Mbignum=bpi -wle 'print bpi(2000)'
+````
+
+---
+
+## Task 2: Wait for Completion and View Output
+
+### Solution
+
+```bash
+kubectl wait --for=condition=complete --timeout=300s job pi
+kubectl logs job/pi
+kubectl delete job pi
+```
+
+---
+
+## Task 3: Create a Simple Job
+
+Create a Job named busybox that runs:
+echo hello; sleep 30; echo world
+
+### Solution
+
+```bash
+kubectl create job busybox --image=busybox -- /bin/sh -c 'echo hello; sleep 30; echo world'
+```
+
+---
+
+## Task 4: Follow Logs
+
+### Solution
+
+```bash
+kubectl get pods
+kubectl logs <pod-name> -f
+```
+
+---
+
+## Task 5: Inspect Job
+
+### Solution
+
+```bash
+kubectl get jobs
+kubectl describe job busybox
+kubectl logs job/busybox
+```
+
+---
+
+## Task 6: Delete Job
+
+### Solution
+
+```bash
+kubectl delete job busybox
+```
+
+---
+
+## Task 7: Run Job Sequentially Multiple Times
+
+Create the same job but ensure it runs 5 times sequentially.
+
+### Solution
+
+```yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: busybox
+spec:
+  completions: 5
+  template:
+    spec:
+      containers:
+      - name: busybox
+        image: busybox
+        command:
+        - /bin/sh
+        - -c
+        - echo hello; sleep 30; echo world
+      restartPolicy: OnFailure
+```
+
+Apply and verify:
+
+```bash
+kubectl apply -f job.yaml
+kubectl get job busybox -w
+kubectl delete job busybox
+```
+
+---
+
+## Task 8: Run Job in Parallel
+
+Modify the job to run 5 Pods in parallel.
+
+### Solution
+
+```yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: busybox
+spec:
+  parallelism: 5
+  template:
+    spec:
+      containers:
+      - name: busybox
+        image: busybox
+        command:
+        - /bin/sh
+        - -c
+        - echo hello; sleep 30; echo world
+      restartPolicy: OnFailure
+```
+
+Apply:
+
+```bash
+kubectl apply -f job.yaml
+kubectl get jobs
+kubectl delete job busybox
+```
+
+---
+
+## Task 9: Set Job Timeout
+
+Create a Job that is automatically terminated if it runs longer than 30 seconds.
+
+### Solution
+
+```yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: busybox
+spec:
+  activeDeadlineSeconds: 30
+  template:
+    spec:
+      containers:
+      - name: busybox
+        image: busybox
+        command:
+        - /bin/sh
+        - -c
+        - while true; do echo hello; sleep 10; done
+      restartPolicy: OnFailure
+```
+
+Apply:
+
+```bash
+kubectl apply -f job.yaml
+```

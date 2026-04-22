@@ -203,3 +203,61 @@ Security contexts can be applied at:
 * **Container level → overrides pod settings**
 
 And **Linux capabilities must always be defined at the container level**.
+
+# Scenarios
+## Task1: Create the YAML for an nginx pod that runs with the user ID 1010
+
+```bash
+kubectl run nginx --image=nginx --restart=Never --dry-run=client -o yaml > pod.yaml
+vi pod.yaml
+```
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: null
+  labels:
+    run: nginx
+  name: nginx
+spec:
+  securityContext: 
+    runAsUser: 1010
+  containers:
+  - image: nginx
+    imagePullPolicy: IfNotPresent
+    name: nginx
+    resources: {}
+  dnsPolicy: ClusterFirst
+  restartPolicy: Never
+status: {}
+```
+
+## Task2: Create the YAML for an nginx pod that has the capabilities "NET_ADMIN", "SYS_TIME" added to its container
+
+```bash
+kubectl run nginx --image=nginx --restart=Never --dry-run=client -o yaml > pod.yaml
+vi pod.yaml
+```
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: null
+  labels:
+    run: nginx
+  name: nginx
+spec:
+  containers:
+  - image: nginx
+    imagePullPolicy: IfNotPresent
+    name: nginx
+    securityContext: 
+      capabilities:
+        add: ["NET_ADMIN", "SYS_TIME"]
+    resources: {}
+  dnsPolicy: ClusterFirst
+  restartPolicy: Never
+status: {}
+```
+

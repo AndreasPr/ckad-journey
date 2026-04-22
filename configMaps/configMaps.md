@@ -235,3 +235,201 @@ kubectl describe configmap <config-name>
 
 ConfigMaps provide a clean and scalable way to manage application configuration in Kubernetes. They separate configuration from code, improve reusability, and simplify environment-specific customization.
 
+
+# Scenarios
+
+## Task 1: Create a ConfigMap from Literals
+
+Create a ConfigMap named config with:
+- foo=hello
+- foo2=world
+
+### Solution
+```bash
+kubectl create configmap config \
+  --from-literal=foo=hello \
+  --from-literal=foo2=world
+````
+
+---
+
+## Task 2: Display ConfigMap
+
+### Solution
+
+```bash
+kubectl get configmap config -o yaml
+kubectl describe configmap config
+```
+
+---
+
+## Task 3: Create ConfigMap from File
+
+Create a file:
+
+```bash
+echo -e "foo3=good\nfoo4=bye" > config.txt
+```
+
+### Solution
+
+```bash
+kubectl create configmap configmap2 --from-file=config.txt
+kubectl get configmap configmap2 -o yaml
+```
+
+---
+
+## Task 4: Create ConfigMap from Env File
+
+Create a file:
+
+```bash
+echo -e "var1=value1\n# comment\n\nvar2=value2" > config.env
+```
+
+### Solution
+
+```bash
+kubectl create configmap configmap3 --from-env-file=config.env
+kubectl get configmap configmap3 -o yaml
+```
+
+---
+
+## Task 5: Create ConfigMap with Custom Key
+
+Create a file:
+
+```bash
+echo -e "var3=value3\nvar4=value4" > config4.txt
+```
+
+### Solution
+
+```bash
+kubectl create configmap configmap4 --from-file=special=config4.txt
+kubectl get configmap configmap4 -o yaml
+```
+
+---
+
+## Task 6: Use ConfigMap as Environment Variable
+
+Create ConfigMap:
+
+```bash
+kubectl create configmap options --from-literal=var5=value5
+```
+
+Create Pod YAML:
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+    env:
+    - name: option
+      valueFrom:
+        configMapKeyRef:
+          name: options
+          key: var5
+  restartPolicy: Never
+```
+
+Apply and verify:
+
+```bash
+kubectl apply -f pod.yaml
+kubectl exec -it nginx -- env | grep option
+```
+
+---
+
+## Task 7: Load Entire ConfigMap as Env
+
+Create ConfigMap:
+
+```bash
+kubectl create configmap new-config \
+  --from-literal=var6=value6 \
+  --from-literal=var7=value7
+```
+
+Pod YAML:
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+    envFrom:
+    - configMapRef:
+        name: new-config
+  restartPolicy: Never
+```
+
+Apply and verify:
+
+```bash
+kubectl apply -f pod.yaml
+kubectl exec -it nginx -- env
+```
+
+---
+
+## Task 8: Mount ConfigMap as Volume
+
+Create ConfigMap:
+
+```bash
+kubectl create configmap cmvolume \
+  --from-literal=var8=value8 \
+  --from-literal=var9=value9
+```
+
+```bash
+kubectl run nginx --image=nginx --restart=Never -o yaml --dry-run=client > pod.yaml
+vi pod.yaml
+```
+
+Pod YAML:
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+spec:
+  volumes:
+  - name: myvolume
+    configMap:
+      name: cmvolume
+  containers:
+  - name: nginx
+    image: nginx
+    volumeMounts:
+    - name: myvolume
+      mountPath: /etc/mydir
+  restartPolicy: Never
+```
+
+Apply and verify:
+
+```bash
+kubectl apply -f pod.yaml
+kubectl exec -it nginx -- /bin/sh
+cd /etc/mydir
+ls
+cat var8
+```

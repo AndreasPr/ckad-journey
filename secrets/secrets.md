@@ -161,3 +161,215 @@ DB_Password
 ```$ cat /opt/app-secret-volumes/DB_Password```
 
 Displays the decoded value.
+
+
+
+# Scenarios
+
+## Task 1: Create a Secret from Literal
+
+Create a Secret named mysecret with:
+- password=mypass
+
+### Solution
+```bash
+kubectl create secret generic mysecret --from-literal=password=mypass
+```
+
+---
+
+## Task 2: Create Secret from File
+
+Create a file:
+
+```bash
+echo -n admin > username
+```
+
+Create the Secret:
+
+```bash
+kubectl create secret generic mysecret2 --from-file=username
+```
+
+---
+
+## Task 3: Retrieve Secret Value
+
+### Solution
+
+```bash
+kubectl get secret mysecret2 -o yaml
+```
+
+Decode value:
+
+```bash
+kubectl get secret mysecret2 -o jsonpath='{.data.username}' | base64 -d
+```
+
+---
+
+## Task 4: Mount Secret as Volume
+
+Create a Pod that mounts mysecret2 at /etc/foo
+
+### Solution
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+spec:
+  volumes:
+  - name: foo
+    secret:
+      secretName: mysecret2
+  containers:
+  - name: nginx
+    image: nginx
+    volumeMounts:
+    - name: foo
+      mountPath: /etc/foo
+  restartPolicy: Never
+```
+
+Apply and verify:
+
+```bash
+kubectl apply -f pod.yaml
+kubectl exec -it nginx -- ls /etc/foo
+kubectl exec -it nginx -- cat /etc/foo/username
+```
+
+---
+
+## Task 5: Use Secret as Environment Variable
+
+Delete previous Pod and create a new one using env variable.
+
+### Solution
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+    env:
+    - name: USERNAME
+      valueFrom:
+        secretKeyRef:
+          name: mysecret2
+          key: username
+  restartPolicy: Never
+```
+
+Apply and verify:
+
+```bash
+kubectl apply -f pod.yaml
+kubectl exec -it nginx -- env | grep USERNAME
+```
+
+---
+
+## Task 6: Create Secret in Namespace
+
+Create namespace and Secret:
+
+```bash
+kubectl create namespace secret-ops
+kubectl create secret generic ext-service-secret \
+  -n secret-ops \
+  --from-literal=API_KEY=crwswRXCAcdsf3
+```
+
+---
+
+## Task 7: Consume Secret as Environment Variable
+
+Create Pod in namespace secret-ops:
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: consumer
+  namespace: secret-ops
+spec:
+  containers:
+  - name: consumer
+    image: nginx
+    env:
+    - name: API_KEY
+      valueFrom:
+        secretKeyRef:
+          name: ext-service-secret
+          key: API_KEY
+  restartPolicy: Always
+```
+
+Apply and verify:
+
+```bash
+kubectl apply -f pod.yaml
+kubectl exec -it -n secret-ops consumer -- /bin/sh
+env
+```
+
+---
+
+## Task 8: Create SSH Secret
+
+Create SSH secret from file id_rsa.
+
+### Solution
+
+```bash
+kubectl create secret generic my-secret \
+  -n secret-ops \
+  --type=kubernetes.io/ssh-auth \
+  --from-file=ssh-privatekey=id_rsa
+```
+
+---
+
+## Task 9: Mount Secret as Volume
+
+Create Pod that mounts Secret at /var/app (read-only).
+
+### Solution
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: consumer
+  namespace: secret-ops
+spec:
+  containers:
+  - name: consumer
+    image: nginx
+    volumeMounts:
+    - name: secret-vol
+      mountPath: /var/app
+      readOnly: true
+  volumes:
+  - name: secret-vol
+    secret:
+      secretName: my-secret
+  restartPolicy: Always
+```
+
+Apply and verify:
+
+```bash
+kubectl apply -f pod.yaml
+kubectl exec -it -n secret-ops consumer -- /bin/sh
+cat /var/app/ssh-privatekey
+```

@@ -232,3 +232,230 @@ Meaning:
 * Total memory requests ≤ 4Gi
 * Total CPU limits ≤ 10
 * Total memory limits ≤ 10Gi
+
+
+# Limit Range Scenarios
+
+## Task 1: Create Namespace and LimitRange
+
+Create a namespace named limitrange and define a LimitRange with:
+- Minimum memory per Pod: 100Mi
+- Maximum memory per Pod: 500Mi
+
+### Solution
+```bash
+kubectl create namespace limitrange
+````
+
+Create YAML:
+
+```yaml
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: ns-memory-limit
+  namespace: limitrange
+spec:
+  limits:
+  - type: Pod
+    min:
+      memory: "100Mi"
+    max:
+      memory: "500Mi"
+```
+
+Apply:
+
+```bash
+kubectl apply -f limitrange.yaml
+```
+
+---
+
+## Task 2: Verify LimitRange
+
+### Solution
+
+```bash
+kubectl describe limitrange ns-memory-limit -n limitrange
+```
+
+---
+
+## Task 3: Create Pod with Memory Requests
+
+Create a Pod named nginx in the limitrange namespace with:
+
+* Memory request: 250Mi
+* Memory limit: 500Mi
+
+### Solution
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+  namespace: limitrange
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+    resources:
+      requests:
+        memory: "250Mi"
+      limits:
+        memory: "500Mi"
+  restartPolicy: Always
+```
+
+Apply:
+
+```bash
+kubectl apply -f pod.yaml
+```
+
+
+# ResourceQuotas Scenarios
+
+## Task 1: Create Namespace and ResourceQuota
+
+Create a namespace named my-ns and define a ResourceQuota with:
+- requests.cpu = 1
+- requests.memory = 1Gi
+- limits.cpu = 2
+- limits.memory = 2Gi
+
+### Solution
+```bash
+kubectl create namespace my-ns
+````
+
+Create YAML:
+
+```yaml
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: my-rq
+  namespace: my-ns
+spec:
+  hard:
+    requests.cpu: "1"
+    requests.memory: 1Gi
+    limits.cpu: "2"
+    limits.memory: 2Gi
+```
+
+Apply:
+
+```bash
+kubectl apply -f resourcequota.yaml
+```
+
+Alternative:
+
+```bash
+kubectl create quota my-rq \
+  --namespace=my-ns \
+  --hard=requests.cpu=1,requests.memory=1Gi,limits.cpu=2,limits.memory=2Gi
+```
+
+---
+
+## Task 2: Create Pod that Exceeds Quota
+
+Create a Pod in namespace my-ns with:
+
+* requests.cpu = 2
+* requests.memory = 3Gi
+* limits.cpu = 3
+* limits.memory = 4Gi
+
+### Solution
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+  namespace: my-ns
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+    resources:
+      requests:
+        cpu: "2"
+        memory: "3Gi"
+      limits:
+        cpu: "3"
+        memory: "4Gi"
+  restartPolicy: Always
+```
+
+Apply:
+
+```bash
+kubectl apply -f pod.yaml
+```
+
+### Expected Result
+
+The Pod creation will fail with a quota exceeded error indicating that the requested resources exceed the defined limits.
+
+---
+
+## Task 3: Create Pod Within Quota
+
+Create a Pod in namespace my-ns with:
+
+* requests.cpu = 0.5
+* requests.memory = 1Gi
+* limits.cpu = 1
+* limits.memory = 2Gi
+
+### Solution
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+  namespace: my-ns
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+    resources:
+      requests:
+        cpu: "0.5"
+        memory: "1Gi"
+      limits:
+        cpu: "1"
+        memory: "2Gi"
+  restartPolicy: Always
+```
+
+Apply:
+
+```bash
+kubectl apply -f pod2.yaml
+```
+
+---
+
+## Task 4: Check ResourceQuota Usage
+
+### Solution
+
+```bash
+kubectl get resourcequota -n my-ns
+```
+
+### Expected Output
+
+* requests.cpu should show 500m used out of 1
+* requests.memory should show 1Gi used out of 1Gi
+* limits.cpu should show 1 used out of 2
+* limits.memory should show 2Gi used out of 2Gi

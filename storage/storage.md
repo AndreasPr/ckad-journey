@@ -776,3 +776,238 @@ spec:
       claimName: claim-log-1
 ```
 Then run the command `kubectl create -f <file-name>.yaml` to create a pod from the definition file.
+
+
+---
+
+## Scenario 6: Shared Volume with emptyDir (Multi-Container Pod)
+
+Create a Pod named busybox with two containers:
+- Both use the busybox image
+- Both run sleep 3600
+- Both mount a shared emptyDir volume at /etc/foo
+
+Then:
+1. Connect to container busybox2 and extract the first column of /etc/passwd into /etc/foo/passwd
+2. Connect to container busybox and print the contents of /etc/foo/passwd
+3. Delete the Pod
+
+### Key Concepts
+- emptyDir is a temporary volume shared between containers in the same Pod
+- Data persists only for the lifetime of the Pod
+- Useful for sidecar and multi-container communication
+
+### Solution
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox
+spec:
+  containers:
+  - name: busybox
+    image: busybox
+    command: ["/bin/sh", "-c", "sleep 3600"]
+    volumeMounts:
+    - name: myvolume
+      mountPath: /etc/foo
+  - name: busybox2
+    image: busybox
+    command: ["/bin/sh", "-c", "sleep 3600"]
+    volumeMounts:
+    - name: myvolume
+      mountPath: /etc/foo
+  volumes:
+  - name: myvolume
+    emptyDir: {}
+````
+
+```bash
+kubectl apply -f pod.yaml
+
+kubectl exec -it busybox -c busybox2 -- /bin/sh
+cat /etc/passwd | cut -d ':' -f 1 > /etc/foo/passwd
+exit
+
+kubectl exec -it busybox -c busybox -- cat /etc/foo/passwd
+
+kubectl delete pod busybox
+```
+
+---
+
+## Task 2: Create PersistentVolume
+
+Create a PersistentVolume named myvolume:
+
+* Size: 10Gi
+* AccessModes: ReadWriteOnce, ReadWriteMany
+* storageClassName: normal
+* hostPath: /etc/foo
+
+### Key Concepts
+
+* PersistentVolume is cluster-wide storage
+* hostPath ties storage to a specific node (not suitable for multi-node clusters)
+* AccessModes define how Pods can use the volume
+
+### Solution
+
+```yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: myvolume
+spec:
+  storageClassName: normal
+  capacity:
+    storage: 10Gi
+  accessModes:
+  - ReadWriteOnce
+  - ReadWriteMany
+  hostPath:
+    path: /etc/foo
+```
+
+```bash
+kubectl apply -f pv.yaml
+kubectl get pv
+```
+
+---
+
+## Task 3: Create PersistentVolumeClaim
+
+Create a PersistentVolumeClaim named mypvc:
+
+* Request: 4Gi
+* AccessMode: ReadWriteOnce
+* storageClassName: normal
+
+### Key Concepts
+
+* PVC requests storage from available PVs
+* Binding occurs when requirements match
+* Once bound, PVC is tied to a specific PV
+
+### Solution
+
+```yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mypvc
+spec:
+  storageClassName: normal
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 4Gi
+```
+
+```bash
+kubectl apply -f pvc.yaml
+kubectl get pvc
+kubectl get pv
+```
+
+---
+
+## Task 4: Use PVC in a Pod
+
+Create a Pod that:
+
+* Uses busybox image
+* Runs sleep 3600
+* Mounts PVC at /etc/foo
+
+Then:
+
+* Copy /etc/passwd into /etc/foo/passwd
+
+### Key Concepts
+
+* PVC abstracts storage from Pods
+* Pods consume storage via PVC, not PV directly
+
+### Solution
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox
+spec:
+  containers:
+  - name: busybox
+    image: busybox
+    command: ["/bin/sh", "-c", "sleep 3600"]
+    volumeMounts:
+    - name: myvolume
+      mountPath: /etc/foo
+  volumes:
+  - name: myvolume
+    persistentVolumeClaim:
+      claimName: mypvc
+```
+
+```bash
+kubectl apply -f pod.yaml
+kubectl exec busybox -- cp /etc/passwd /etc/foo/passwd
+```
+
+---
+
+## Task 5: Verify Data Persistence Across Pods
+
+Create a second Pod (busybox2) using the same PVC.
+
+Verify:
+
+* /etc/foo/passwd exists in the second Pod
+
+### Key Concepts
+
+* Data persists beyond Pod lifecycle
+* hostPath limitation: data only visible if Pods run on same node
+* In multi-node clusters, use network storage (e.g. NFS, EBS, etc.)
+
+### Solution
+
+```bash
+# duplicate pod.yaml and change name to busybox2
+kubectl apply -f pod.yaml
+
+kubectl exec busybox2 -- ls /etc/foo
+```
+
+Cleanup:
+
+```bash
+kubectl delete pod busybox busybox2
+kubectl delete pvc mypvc
+kubectl delete pv myvolume
+```
+
+---
+
+## Task 6: Copy File from Pod to Local Machine
+
+Create a Pod and copy /etc/passwd to your local system.
+
+### Key Concepts
+
+* kubectl cp allows file transfer between local machine and Pods
+* Useful for debugging and data extraction
+
+### Solution
+
+```bash
+kubectl run busybox --image=busybox --restart=Never -- sleep 3600
+
+kubectl cp busybox:/etc/passwd ./passwd
+
+cat passwd
+```
+
